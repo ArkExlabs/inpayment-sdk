@@ -22,6 +22,8 @@ export interface InpaymentSDKOptions {
 export interface BuyTokensOptions {
   amount: string | number; // 购买数量
   account: string; // 账户地址
+  roundIndex: number; // 轮次索引
+  referrer?: string; // 推荐人地址
 }
 
 /**

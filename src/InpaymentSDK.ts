@@ -3,7 +3,7 @@ import {
   erc20ABI,
   paymentContractABI,
   vestingManagerABI,
-  projectRegistryABI,
+  // projectRegistryABI,
 } from './contracts/abi';
 import {
   InpaymentSDKOptions,
@@ -19,7 +19,7 @@ import { formatError, isValidAddress, toWei } from './utils';
 export class InpaymentSDK {
   private provider: ethers.providers.JsonRpcProvider;
   //
-  private projectRegistryAddress: string;
+  // private projectRegistryAddress: string;
   private projectId: string;
   private projectInfo: ProjectInfo | null = null;
 
@@ -29,10 +29,18 @@ export class InpaymentSDK {
    */
   constructor(options: InpaymentSDKOptions) {
     this.projectId = options.projectId;
-    this.projectRegistryAddress = options.projectRegistryAddress;
+    // this.projectRegistryAddress = options.projectRegistryAddress;
     const providerUrl = options.providerUrl;
 
-    this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
+    const providerOptions = {
+      chainId: options.chainId || 1,
+      name: 'custom',
+    };
+
+    this.provider = new ethers.providers.JsonRpcProvider(
+      providerUrl,
+      options.chainId ? providerOptions : undefined
+    );
 
     if (options.chainId) {
       this.provider.network.chainId = options.chainId;
@@ -44,17 +52,17 @@ export class InpaymentSDK {
    */
   public async init(): Promise<ProjectInfo> {
     try {
-      const projectRegistry = new ethers.Contract(
-        this.projectRegistryAddress,
-        projectRegistryABI,
-        this.provider
-      );
+      // const projectRegistry = new ethers.Contract(
+      //   this.projectRegistryAddress,
+      //   projectRegistryABI,
+      //   this.provider
+      // );
 
-      const [paymentContractAddress, lockContractAddress] = await projectRegistry.getProject(
-        this.projectId
-      );
-      // const paymentContractAddress = '0x647b133d614218E3CE42eF8665A83a4E22644723';
-      // const lockContractAddress = '0xE843114e6bB236648EBEEE1D67C148D3cDb5e7b2';
+      // const [paymentContractAddress, lockContractAddress] = await projectRegistry.getProject(
+      //   this.projectId
+      // );
+      const paymentContractAddress = '0x647b133d614218E3CE42eF8665A83a4E22644723';
+      const lockContractAddress = '0xE843114e6bB236648EBEEE1D67C148D3cDb5e7b2';
 
       if (!isValidAddress(paymentContractAddress) || !isValidAddress(lockContractAddress)) {
         throw new Error('Invalid contract address');
@@ -99,9 +107,14 @@ export class InpaymentSDK {
         signer
       );
 
-      const tx = await paymentContract.buyTokensWithETH({
-        value: toWei(options.amount),
-      });
+      const tx = await paymentContract.buyTokensWithETH(
+        this.projectId,
+        options.roundIndex,
+        options.referrer || ethers.constants.AddressZero,
+        {
+          value: toWei(options.amount),
+        }
+      );
 
       const receipt = await tx.wait();
 
@@ -150,7 +163,13 @@ export class InpaymentSDK {
       await approveTx.wait();
 
       // 购买代币
-      const tx = await paymentContract.buyTokensWithToken(tokenAddress, amountWei);
+      const tx = await paymentContract.buyTokensWithToken(
+        this.projectId,
+        options.roundIndex,
+        amountWei,
+        tokenAddress,
+        options.referrer || ethers.constants.AddressZero
+      );
       const receipt = await tx.wait();
 
       return {

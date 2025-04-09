@@ -1,16 +1,16 @@
-# 更新日志
+# Changelog
 
-本文档记录了Inpayment SDK的所有重要变更。
+This document records all significant changes to the Inpayment SDK.
 
 ## [1.0.0] - 2024-xx-xx
 
-### 新增
+### Added
 
-- 初始版本发布
-- 支持通过项目ID获取对应的合约地址
-- 支持使用ETH购买代币
-- 支持使用ERC20代币购买
-- 支持释放已释放的代币
-- 支持批量释放所有代币
-- 完整的TypeScript类型支持
-- 包含详细的文档和示例
+- Initial version release
+- Support for getting contract addresses by project ID
+- Support for purchasing tokens with ETH
+- Support for purchasing tokens with ERC20 tokens
+- Support for releasing unlocked tokens
+- Support for batch releasing all tokens
+- Full TypeScript type support
+- Comprehensive documentation and examples

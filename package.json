@@ -1,6 +1,10 @@
 {
   "name": "inpayment-sdk",
   "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "examples/*"
+  ],
   "description": "Web3支付SDK，通过项目ID获取合约地址与合约交互",
   "type": "module",
   "main": "dist/index.js",

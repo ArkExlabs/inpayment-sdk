@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { InpaymentSDK } from '../src/InpaymentSDK';
 import type { ethers } from 'ethers';
 
-// 定义模拟的签名者类型
+// Define mock signer type
 interface MockSigner {
   getAddress: () => Promise<string>;
 }
 
-// 模拟ethers库
+// Mock ethers library
 vi.mock('ethers', async () => {
   return {
     ethers: {
@@ -50,6 +50,9 @@ vi.mock('ethers', async () => {
         formatEther: vi.fn().mockReturnValue('1.0'),
       },
       Signer: vi.fn(),
+      constants: {
+        AddressZero: '0x0000000000000000000000000000000000000000',
+      },
     },
   };
 });
@@ -70,29 +73,30 @@ describe('InpaymentSDK', () => {
     };
   });
 
-  it('应该成功初始化SDK', async () => {
+  it('should initialize SDK successfully', async () => {
     const projectInfo = await sdk.init();
     expect(projectInfo).toEqual({
-      paymentContractAddress: '0xPaymentContractAddress',
-      lockContractAddress: '0xLockContractAddress',
+      paymentContractAddress: '0x647b133d614218E3CE42eF8665A83a4E22644723',
+      lockContractAddress: '0xE843114e6bB236648EBEEE1D67C148D3cDb5e7b2',
     });
   });
 
-  it('应该成功获取项目信息', async () => {
+  it('should get project info successfully', async () => {
     await sdk.init();
     const projectInfo = sdk.getProjectInfo();
     expect(projectInfo).toEqual({
-      paymentContractAddress: '0xPaymentContractAddress',
-      lockContractAddress: '0xLockContractAddress',
+      paymentContractAddress: '0x647b133d614218E3CE42eF8665A83a4E22644723',
+      lockContractAddress: '0xE843114e6bB236648EBEEE1D67C148D3cDb5e7b2',
     });
   });
 
-  it('应该成功使用ETH购买代币', async () => {
+  it('should buy tokens with ETH successfully', async () => {
     await sdk.init();
     const result = await sdk.buyTokensWithETH(
       {
         amount: '1.0',
         account: '0xUserAddress',
+        roundIndex: 0,
       },
       mockSigner as unknown as ethers.Signer
     );
@@ -102,13 +106,14 @@ describe('InpaymentSDK', () => {
     });
   });
 
-  it('应该成功使用ERC20代币购买', async () => {
+  it('should buy tokens with ERC20 successfully', async () => {
     await sdk.init();
     const result = await sdk.buyTokensWithToken(
       '0xTokenAddress',
       {
         amount: '100',
         account: '0xUserAddress',
+        roundIndex: 0,
       },
       mockSigner as unknown as ethers.Signer
     );
@@ -118,7 +123,7 @@ describe('InpaymentSDK', () => {
     });
   });
 
-  it('应该成功释放代币', async () => {
+  it('should release tokens successfully', async () => {
     await sdk.init();
     const result = await sdk.releaseTokens(mockSigner as unknown as ethers.Signer);
     expect(result).toEqual({
@@ -127,7 +132,7 @@ describe('InpaymentSDK', () => {
     });
   });
 
-  it('应该成功释放所有代币', async () => {
+  it('should release all tokens successfully', async () => {
     await sdk.init();
     const result = await sdk.releaseAllTokens(mockSigner as unknown as ethers.Signer);
     expect(result).toEqual({
