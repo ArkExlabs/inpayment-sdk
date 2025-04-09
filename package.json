@@ -44,12 +44,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/inpayment-sdk.git"
+    "url": "git+https://github.com/ArkExlabs/inpayment-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/inpayment-sdk/issues"
+    "url": "https://github.com/ArkExlabs/inpayment-sdk/issues"
   },
-  "homepage": "https://github.com/yourusername/inpayment-sdk#readme",
+  "homepage": "https://github.com/ArkExlabs/inpayment-sdk#readme",
   "directories": {
     "test": "test"
   },
