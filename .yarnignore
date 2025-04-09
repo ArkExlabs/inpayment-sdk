@@ -1,0 +1,28 @@
+# 源码文件
+/src
+
+# 测试文件
+/test
+/coverage
+vitest.config.ts
+
+# 配置文件
+tsconfig.json
+tsup.config.ts
+.prettierrc
+.eslintrc.json
+eslint.config.js
+.github
+
+# 其他文件
+/examples
+/node_modules
+.DS_Store
+*.log
+.pnpm-store
+.vscode
+.idea
+
+# 构建过程
+/tmp
+/.build 

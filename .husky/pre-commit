@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged
+echo "🚀 Running lint-staged..."
+pnpm lint-staged || (echo "❌ Lint-staged checks failed. Please fix the above issues." && exit 1)
+
+# Run tests
+echo "🧪 Running tests..."
+pnpm test || (echo "❌ Tests failed. Please fix failing tests." && exit 1)
+
+echo "✅ All pre-commit checks passed!"
