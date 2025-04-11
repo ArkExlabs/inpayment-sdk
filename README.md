@@ -107,7 +107,15 @@ if (result.success) {
 }
 ```
 
-### 5. 批量释放代币
+### 5. 获取用户的锁仓计划数量
+
+```typescript
+const address = '0x...'; // 用户地址
+const count = await sdk.getScheduleCount(address);
+console.log('Schedule count:', count);
+```
+
+### 6. 批量释放代币
 
 ```typescript
 const signer = new ethers.Wallet(privateKey, provider);
