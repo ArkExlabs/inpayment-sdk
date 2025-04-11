@@ -1,282 +1,166 @@
 # Inpayment SDK
 
-A Web3 payment SDK for interacting with payment and lock contracts on the blockchain.
+Inpayment SDK 是一个用于链上交互的 JS SDK。它提供了购买代币、释放代币等功能。
 
-## Features
-
-- Get contract addresses by project ID
-- Purchase tokens using ETH
-- Purchase tokens using ERC20 tokens
-- Release unlocked tokens
-- Batch release all tokens
-- Full TypeScript support
-- Comprehensive error handling
-
-## Installation
+## 安装
 
 ```bash
-# Using npm
 npm install inpayment-sdk
-
-# Using pnpm
-pnpm add inpayment-sdk
-
-# Using yarn
+# 或
 yarn add inpayment-sdk
 ```
 
-## Quick Start
+## 初始化
 
-### Initialize the SDK
+首先需要初始化 SDK 实例：
 
 ```typescript
 import { InpaymentSDK } from 'inpayment-sdk';
 import { ethers } from 'ethers';
 
-// Create SDK instance
 const sdk = new InpaymentSDK({
   projectId: 'your-project-id',
-  providerUrl: 'https://ethereum.publicnode.com', // Optional, defaults to public node
-  chainId: 1, // Optional, defaults to current network
+  providerUrl: 'https://your-rpc-url',
+  projectRegistryAddress: '0x...', // 项目注册合约地址
+  chainId: 1, // 可选，默认为1
 });
 
-// Initialize SDK and get project info
+// 初始化SDK
 await sdk.init();
-
-// Get project info
-const projectInfo = sdk.getProjectInfo();
-console.log('Payment contract address:', projectInfo.paymentContractAddress);
-console.log('Lock contract address:', projectInfo.lockContractAddress);
 ```
 
-### Purchase Tokens with ETH
+### 初始化参数说明
+
+| 参数                   | 类型   | 必填 | 说明             |
+| ---------------------- | ------ | ---- | ---------------- |
+| projectId              | string | 是   | 项目ID           |
+| providerUrl            | string | 是   | RPC节点URL       |
+| projectRegistryAddress | string | 是   | 项目注册合约地址 |
+| chainId                | number | 否   | 链ID，默认为1    |
+
+## 主要功能
+
+### 1. 获取项目信息
 
 ```typescript
-import { InpaymentSDK } from 'inpayment-sdk';
-import { ethers } from 'ethers';
+const projectInfo = sdk.getProjectInfo();
+console.log(projectInfo);
+// 输出: { paymentContractAddress: '0x...', lockContractAddress: '0x...' }
+```
 
-// Connect to user wallet
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-await provider.send('eth_requestAccounts', []);
-const signer = provider.getSigner();
-const address = await signer.getAddress();
+### 2. 使用ETH购买代币
 
-// Create SDK instance
-const sdk = new InpaymentSDK({ projectId: 'your-project-id' });
+```typescript
+const signer = new ethers.Wallet(privateKey, provider);
 
-// Purchase tokens with ETH
 const result = await sdk.buyTokensWithETH(
   {
-    amount: '0.1', // ETH amount
-    account: address, // User address
+    amount: '1.0', // ETH数量
+    account: '0x...', // 购买者地址
+    roundIndex: 0, // 轮次索引
+    referrer: '0x...', // 可选，推荐人地址
   },
   signer
 );
 
 if (result.success) {
-  console.log('Transaction successful, hash:', result.transactionHash);
+  console.log('Transaction hash:', result.transactionHash);
 } else {
-  console.error('Transaction failed:', result.error);
+  console.error('Error:', result.error);
 }
 ```
 
-### Purchase Tokens with ERC20
+### 3. 使用ERC20代币购买
 
 ```typescript
-import { InpaymentSDK } from 'inpayment-sdk';
-import { ethers } from 'ethers';
+const signer = new ethers.Wallet(privateKey, provider);
 
-// Connect to user wallet
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-await provider.send('eth_requestAccounts', []);
-const signer = provider.getSigner();
-const address = await signer.getAddress();
-
-// Create SDK instance
-const sdk = new InpaymentSDK({ projectId: 'your-project-id' });
-
-// ERC20 token address
-const tokenAddress = '0xTokenAddress';
-
-// Purchase tokens with ERC20
 const result = await sdk.buyTokensWithToken(
-  tokenAddress,
+  '0x...', // ERC20代币合约地址
   {
-    amount: '100', // Token amount
-    account: address, // User address
+    amount: '100.0', // 代币数量
+    account: '0x...', // 购买者地址
+    roundIndex: 0, // 轮次索引
+    referrer: '0x...', // 可选，推荐人地址
   },
   signer
 );
 
 if (result.success) {
-  console.log('Transaction successful, hash:', result.transactionHash);
+  console.log('Transaction hash:', result.transactionHash);
 } else {
-  console.error('Transaction failed:', result.error);
+  console.error('Error:', result.error);
 }
 ```
 
-### Release Tokens
+### 4. 释放代币
 
 ```typescript
-import { InpaymentSDK } from 'inpayment-sdk';
-import { ethers } from 'ethers';
+const signer = new ethers.Wallet(privateKey, provider);
 
-// Connect to user wallet
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-await provider.send('eth_requestAccounts', []);
-const signer = provider.getSigner();
-
-// Create SDK instance
-const sdk = new InpaymentSDK({ projectId: 'your-project-id' });
-
-// Release tokens
 const result = await sdk.releaseTokens(signer);
 
 if (result.success) {
-  console.log('Release successful, hash:', result.transactionHash);
+  console.log('Transaction hash:', result.transactionHash);
 } else {
-  console.error('Release failed:', result.error);
+  console.error('Error:', result.error);
 }
 ```
 
-### Release All Tokens
+### 5. 批量释放代币
 
 ```typescript
-import { InpaymentSDK } from 'inpayment-sdk';
-import { ethers } from 'ethers';
+const signer = new ethers.Wallet(privateKey, provider);
 
-// Connect to user wallet
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-await provider.send('eth_requestAccounts', []);
-const signer = provider.getSigner();
-
-// Create SDK instance
-const sdk = new InpaymentSDK({ projectId: 'your-project-id' });
-
-// Release all tokens
-const result = await sdk.releaseAllTokens(signer);
+const result = await sdk.releaseAllTokens({
+  signer,
+  startIdx: 0, // 起始索引
+  batchSize: 10, // 批量大小
+});
 
 if (result.success) {
-  console.log('Release successful, hash:', result.transactionHash);
+  console.log('Transaction hash:', result.transactionHash);
 } else {
-  console.error('Release failed:', result.error);
+  console.error('Error:', result.error);
 }
 ```
 
-## API Documentation
+## 接口说明
 
-### Classes
+### ProjectInfo
 
-#### InpaymentSDK
+| 字段                   | 类型   | 说明         |
+| ---------------------- | ------ | ------------ |
+| paymentContractAddress | string | 支付合约地址 |
+| lockContractAddress    | string | 锁仓合约地址 |
 
-Main SDK class, provides all methods for contract interaction.
+### BuyTokensOptions
 
-##### Constructor
+| 字段       | 类型             | 必填 | 说明       |
+| ---------- | ---------------- | ---- | ---------- |
+| amount     | string \| number | 是   | 购买数量   |
+| account    | string           | 是   | 账户地址   |
+| roundIndex | number           | 是   | 轮次索引   |
+| referrer   | string           | 否   | 推荐人地址 |
 
-```typescript
-constructor(options: InpaymentSDKOptions)
-```
+### TransactionResult
 
-- `options` - SDK initialization options
-  - `projectId` - Project ID
-  - `providerUrl` - Optional, RPC provider URL
-  - `chainId` - Optional, chain ID
+| 字段            | 类型    | 说明               |
+| --------------- | ------- | ------------------ |
+| success         | boolean | 交易是否成功       |
+| transactionHash | string  | 交易哈希（成功时） |
+| error           | string  | 错误信息（失败时） |
 
-##### Methods
+## 错误处理
 
-- `init()` - Initialize SDK, get project info
-- `getProjectInfo()` - Get project info
-- `buyTokensWithETH(options, signer)` - Purchase tokens with ETH
-- `buyTokensWithToken(tokenAddress, options, signer)` - Purchase tokens with ERC20
-- `releaseTokens(signer)` - Release tokens
-- `releaseAllTokens(signer)` - Release all tokens
+SDK 会自动处理常见的错误，并返回格式化的错误信息。所有方法都会返回 `TransactionResult` 对象，包含交易状态和相关信息。
 
-### Interfaces
+## 注意事项
 
-#### InpaymentSDKOptions
+1. 在使用 SDK 之前，请确保已经正确初始化
+2. 所有涉及交易的方法都需要提供有效的 `ethers.Signer` 实例
+3. 建议在使用前先检查项目信息是否正确
 
-```typescript
-interface InpaymentSDKOptions {
-  projectId: string;
-  providerUrl?: string;
-  chainId?: number;
-}
-```
+## 示例代码
 
-#### ProjectInfo
-
-```typescript
-interface ProjectInfo {
-  paymentContractAddress: string;
-  lockContractAddress: string;
-}
-```
-
-#### BuyTokensOptions
-
-```typescript
-interface BuyTokensOptions {
-  amount: string | number; // Amount to buy
-  account: string; // Account address
-}
-```
-
-#### TransactionResult
-
-```typescript
-interface TransactionResult {
-  success: boolean;
-  transactionHash?: string;
-  error?: string;
-}
-```
-
-## Error Handling
-
-All methods in the SDK handle errors and return a unified `TransactionResult` format. If the operation is successful, the `success` field is `true` and includes a `transactionHash`; if the operation fails, the `success` field is `false` and includes an `error` message.
-
-## Development and Building
-
-```bash
-# Install dependencies
-pnpm install
-
-# Development mode
-pnpm dev
-
-# Build
-pnpm build
-
-# Test
-pnpm test
-
-# Code checking
-pnpm lint
-```
-
-## Publishing npm Package
-
-```bash
-# Login to npm
-npm login
-
-# Publish beta version
-npm version patch --tag beta # or minor, major
-npm publish --tag beta
-
-# Publish release version
-npm version patch # or minor, major
-npm publish
-```
-
-Release process:
-
-1. Make sure all code is committed to git
-2. Run `npm version [patch|minor|major]` to update version
-3. The script will automatically build and test
-4. After successful version update, it will push to git and create a tag
-5. Run `npm publish` to publish to npm
-
-## License
-
-MIT
+完整的示例代码可以在 `examples` 目录中找到。这些示例展示了如何使用 SDK 的各种功能。

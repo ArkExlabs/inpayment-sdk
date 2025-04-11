@@ -35,6 +35,9 @@ vi.mock('ethers', async () => {
             transactionHash: '0xTransactionHash',
           }),
         }),
+        getScheduleCount: vi.fn().mockResolvedValue({
+          toNumber: vi.fn().mockReturnValue(1),
+        }),
         approve: vi.fn().mockResolvedValue({
           wait: vi.fn().mockResolvedValue({}),
         }),
@@ -134,7 +137,11 @@ describe('InpaymentSDK', () => {
 
   it('should release all tokens successfully', async () => {
     await sdk.init();
-    const result = await sdk.releaseAllTokens(mockSigner as unknown as ethers.Signer);
+    const result = await sdk.releaseAllTokens({
+      signer: mockSigner as unknown as ethers.Signer,
+      startIdx: 1,
+      batchSize: 100,
+    });
     expect(result).toEqual({
       success: true,
       transactionHash: '0xTransactionHash',

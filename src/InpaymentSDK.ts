@@ -184,6 +184,25 @@ export class InpaymentSDK {
     }
   }
 
+  async getScheduleCount(address: string): Promise<number> {
+    try {
+      if (!this.projectInfo) {
+        await this.init();
+      }
+
+      const vestingContract = new ethers.Contract(
+        this.projectInfo!.lockContractAddress,
+        vestingManagerABI
+      );
+
+      const scheduleId = await vestingContract.getScheduleCount(address);
+
+      return scheduleId.toNumber();
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
   /**
    * 释放代币
    */
@@ -199,7 +218,11 @@ export class InpaymentSDK {
         signer
       );
 
-      const tx = await vestingContract.releaseTokens();
+      const address = await signer.getAddress();
+
+      const scheduleId = await this.getScheduleCount(address);
+
+      const tx = await vestingContract.releaseTokens(scheduleId);
       const receipt = await tx.wait();
 
       return {
@@ -217,7 +240,11 @@ export class InpaymentSDK {
   /**
    * 释放所有代币
    */
-  public async releaseAllTokens(signer: ethers.Signer): Promise<TransactionResult> {
+  public async releaseAllTokens(params: {
+    signer: ethers.Signer;
+    startIdx: number;
+    batchSize: number;
+  }): Promise<TransactionResult> {
     try {
       if (!this.projectInfo) {
         await this.init();
@@ -226,10 +253,13 @@ export class InpaymentSDK {
       const vestingContract = new ethers.Contract(
         this.projectInfo!.lockContractAddress,
         vestingManagerABI,
-        signer
+        params.signer
       );
 
-      const tx = await vestingContract.releaseAllTokens();
+      const tx = await vestingContract.releaseAllTokens(
+        params.startIdx || 1,
+        params.batchSize || 100
+      );
       const receipt = await tx.wait();
 
       return {

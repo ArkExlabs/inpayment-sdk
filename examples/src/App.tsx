@@ -176,7 +176,11 @@ function App() {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
 
-      const result = await sdk.releaseAllTokens(signer);
+      const result = await sdk.releaseAllTokens({
+        signer,
+        startIdx: 1,
+        batchSize: 100,
+      });
 
       if (result.success) {
         toast({
