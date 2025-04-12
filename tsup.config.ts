@@ -7,7 +7,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ['ethers', 'web3'],
+  external: ['ethers', 'dayjs'],
   treeshake: true,
   minify: true,
   outDir: 'dist',

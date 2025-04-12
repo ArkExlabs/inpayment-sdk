@@ -115,7 +115,31 @@ const count = await sdk.getScheduleCount(address);
 console.log('Schedule count:', count);
 ```
 
-### 6. 批量释放代币
+### 6. 获取锁仓计划详情
+
+```typescript
+const result = await sdk.getVestingScheduleInfo({
+  address: '0x...', // 用户地址
+  scheduleId: 1, // 锁仓计划ID
+});
+
+console.log('Vesting schedule:', {
+  beneficiary: result.beneficiary, // 受益人地址
+  amount: result.amount, // 锁仓总量
+  released: result.released, // 已释放数量
+  startTime: result.startTime, // 开始时间
+  cliff: result.cliff, // 锁定期
+  duration: result.duration, // 释放期
+  vestingType: result.vestingType, // 锁仓类型
+  period: result.period, // 释放周期
+  periodReleasePercentage: result.periodReleasePercentage, // 每期释放比例
+  revoked: result.revoked, // 是否已撤销
+  endTime: result.endTime, // 结束时间
+  periodList: result.periodList, // 释放时间点列表
+});
+```
+
+### 7. 批量释放代币
 
 ```typescript
 const signer = new ethers.Wallet(privateKey, provider);

@@ -10,8 +10,10 @@ import {
   ProjectInfo,
   BuyTokensOptions,
   TransactionResult,
+  VestingSchedule,
 } from './interfaces/types';
 import { formatError, isValidAddress, toWei } from './utils';
+import dayjs from 'dayjs';
 
 /**
  * Inpayment SDK 主类
@@ -183,7 +185,11 @@ export class InpaymentSDK {
       };
     }
   }
-
+  /**
+   * 获取代币锁仓计划数量
+   * @param address 地址
+   * @returns 锁仓计划数量
+   */
   async getScheduleCount(address: string): Promise<number> {
     try {
       if (!this.projectInfo) {
@@ -192,7 +198,8 @@ export class InpaymentSDK {
 
       const vestingContract = new ethers.Contract(
         this.projectInfo!.lockContractAddress,
-        vestingManagerABI
+        vestingManagerABI,
+        this.provider
       );
 
       const scheduleId = await vestingContract.getScheduleCount(address);
@@ -201,6 +208,87 @@ export class InpaymentSDK {
     } catch (error) {
       return Promise.reject(error);
     }
+  }
+
+  /**
+   * 获取代币锁仓计划
+   * @param address 地址
+   * @returns 锁仓计划
+   */
+  async getVestingScheduleInfo(params: {
+    address: string;
+    scheduleId: number;
+  }): Promise<VestingSchedule> {
+    try {
+      if (!this.projectInfo) {
+        await this.init();
+      }
+
+      const vestingContract = new ethers.Contract(
+        this.projectInfo!.lockContractAddress,
+        vestingManagerABI,
+        this.provider
+      );
+
+      const scheduleInfo = await vestingContract.getVestingSchedule(
+        params.address,
+        params.scheduleId
+      );
+
+      const startTime = dayjs(scheduleInfo[3] * 1000).format('YYYY-MM-DD HH:mm:ss');
+      const cliff = Number(scheduleInfo[4]);
+      const duration = Number(scheduleInfo[5]);
+      const endTime = dayjs(startTime)
+        .add(cliff + duration, 'days')
+        .format('YYYY-MM-DD HH:mm:ss');
+
+      const periodList = this.getPeriodList(
+        dayjs(startTime).add(cliff, 'days').unix(),
+        dayjs(endTime).unix()
+      ).map((item) => dayjs(item * 1000).format('YYYY-MM-DD HH:mm:ss'));
+
+      const info: VestingSchedule = {
+        beneficiary: scheduleInfo[0],
+        amount: ethers.utils.formatEther(scheduleInfo[1]),
+        released: ethers.utils.formatEther(scheduleInfo[2]),
+        startTime,
+        cliff,
+        duration,
+        vestingType: scheduleInfo[6],
+        period: Number(scheduleInfo[7]),
+        periodReleasePercentage: scheduleInfo[8].toNumber(),
+        revoked: scheduleInfo[9],
+        endTime,
+        periodList,
+      };
+      return info;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
+  /**
+   * 获取周期列表
+   * @param startTime 开始时间 秒
+   * @param endTime 结束时间 秒
+   * @returns 周期列表
+   */
+  getPeriodList(startTime: number, endTime: number): number[] {
+    const periodList = [];
+    const period = 2 * 24 * 60 * 60; // 2天的秒数
+    let currentTime = startTime + period; // 第一个周期的结束时间
+
+    while (currentTime <= endTime) {
+      periodList.push(currentTime);
+      currentTime += period;
+    }
+
+    // 如果最后一个周期超过endTime，添加endTime
+    if (periodList.length === 0 || periodList[periodList.length - 1] < endTime) {
+      periodList.push(endTime);
+    }
+
+    return periodList;
   }
 
   /**
@@ -272,5 +360,16 @@ export class InpaymentSDK {
         error: formatError(error),
       };
     }
+  }
+
+  // 项目方直接转账代币
+
+  transferToken() {
+    throw new Error('Not implemented');
+  }
+
+  // 获取代币价格
+  getTokenPrice() {
+    throw new Error('Not implemented');
   }
 }

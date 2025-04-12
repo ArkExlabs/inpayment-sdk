@@ -34,3 +34,34 @@ export interface TransactionResult {
   transactionHash?: string;
   error?: string;
 }
+
+/**
+ * 锁仓计划
+ */
+
+export interface VestingSchedule {
+  // 受益人地址
+  beneficiary: string;
+  // 锁仓的代币总量
+  amount: string;
+  // 已释放的代币数量
+  released: string;
+  // 开始时间
+  startTime: string;
+  // 悬崖期
+  cliff: number;
+  // 锁仓期
+  duration: number;
+  // 锁仓类型
+  vestingType: 1 | 2; // 1: 线性释放 2: 阶梯释放
+  // 周期
+  period: number;
+  // 每个周期的释放比例
+  periodReleasePercentage: number;
+  // 是否已完全释放
+  revoked: boolean;
+  // 结束时间
+  endTime: string;
+  // 周期列表
+  periodList: string[];
+}

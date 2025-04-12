@@ -1,6 +1,6 @@
 {
   "name": "inpayment-sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "workspaces": [
     "examples/*"
   ],
@@ -77,5 +77,8 @@
     "vite": "^6.2.5",
     "vite-plugin-dts": "^4.5.3",
     "vitest": "^3.1.1"
+  },
+  "dependencies": {
+    "dayjs": "1.11.13"
   }
 }

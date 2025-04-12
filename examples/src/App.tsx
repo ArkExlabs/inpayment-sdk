@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -14,6 +14,7 @@ import {
 } from '@chakra-ui/react';
 import { InpaymentSDK } from '../../src/index';
 import { ethers } from 'ethers';
+import dayjs from 'dayjs';
 
 function App() {
   const [sdk, setSdk] = useState<InpaymentSDK | null>(null);
@@ -40,7 +41,6 @@ function App() {
 
       await sdk.init();
       setSdk(sdk);
-      console.log(sdk, 'sdksdksdk');
 
       toast({
         title: 'Connected successfully',
@@ -56,6 +56,10 @@ function App() {
       });
     }
   };
+
+  useEffect(() => {
+    sdk && getScheduleCount();
+  }, [sdk]);
 
   const buyWithETH = async () => {
     if (!sdk || !amount) return;
@@ -134,6 +138,29 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getVestingScheduleInfo = async (params: { address: string; scheduleId: number }) => {
+    if (!sdk) return;
+
+    const result = await sdk.getVestingScheduleInfo(params);
+    return result;
+  };
+
+  const getScheduleCount = async () => {
+    if (!sdk) return;
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const address = await signer.getAddress();
+
+    const result = await sdk.getScheduleCount(address);
+    const infoList = new Array(result).fill(0).map((_, index) => {
+      return getVestingScheduleInfo({ address, scheduleId: index });
+    });
+    const resultList = await Promise.all(infoList);
+
+    console.log(resultList, 'resultList');
   };
 
   const releaseTokens = async () => {

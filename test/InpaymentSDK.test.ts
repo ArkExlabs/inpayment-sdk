@@ -38,6 +38,18 @@ vi.mock('ethers', async () => {
         getScheduleCount: vi.fn().mockResolvedValue({
           toNumber: vi.fn().mockReturnValue(1),
         }),
+        getVestingSchedule: vi.fn().mockResolvedValue([
+          '0xBeneficiary',
+          '1000000000000000000', // 1 ETH
+          '500000000000000000', // 0.5 ETH
+          '1712880000', // 2024-04-12 00:00:00
+          '30', // 30 days cliff
+          '90', // 90 days duration
+          '1', // vesting type
+          '2', // period
+          { toNumber: vi.fn().mockReturnValue(25) }, // 25% per period
+          false, // revoked
+        ]),
         approve: vi.fn().mockResolvedValue({
           wait: vi.fn().mockResolvedValue({}),
         }),
@@ -146,5 +158,43 @@ describe('InpaymentSDK', () => {
       success: true,
       transactionHash: '0xTransactionHash',
     });
+  });
+
+  it('should get vesting schedule info successfully', async () => {
+    await sdk.init();
+    const result = await sdk.getVestingScheduleInfo({
+      address: '0xUserAddress',
+      scheduleId: 1,
+    });
+    expect(result).toEqual({
+      beneficiary: '0xBeneficiary',
+      amount: '1.0',
+      released: '1.0',
+      startTime: '2024-04-12 08:00:00',
+      cliff: 30,
+      duration: 90,
+      vestingType: '1',
+      period: 2,
+      periodReleasePercentage: 25,
+      revoked: false,
+      endTime: '2024-08-10 08:00:00',
+      periodList: expect.any(Array),
+    });
+  });
+
+  it('should get period list successfully', async () => {
+    const startTime = 1712880000; // 2024-04-12 00:00:00
+    const endTime = 1715500800; // 2024-05-12 00:00:00
+    const result = await sdk.getPeriodList(startTime, endTime);
+
+    // 验证第一个和最后一个时间点
+    expect(result[0]).toBe(1713052800); // 2024-04-14 00:00:00
+    expect(result[result.length - 1]).toBe(1715500800); // 2024-05-12 00:00:00
+
+    // 验证时间间隔是2天
+    for (let i = 1; i < result.length; i++) {
+      const diff = result[i] - result[i - 1];
+      expect(diff).toBeLessThanOrEqual(2 * 24 * 60 * 60);
+    }
   });
 });
