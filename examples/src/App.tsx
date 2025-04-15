@@ -14,12 +14,19 @@ import {
 } from '@chakra-ui/react';
 import { InpaymentSDK } from '../../src/index';
 import { ethers } from 'ethers';
-import dayjs from 'dayjs';
+
+// Add type declaration for window.ethereum
+declare global {
+  interface Window {
+    ethereum?: ethers.providers.ExternalProvider;
+  }
+}
 
 function App() {
   const [sdk, setSdk] = useState<InpaymentSDK | null>(null);
   const [amount, setAmount] = useState('');
   const [tokenAddress, setTokenAddress] = useState('');
+  const [tokenPrice, setTokenPrice] = useState('');
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
@@ -29,17 +36,20 @@ function App() {
         throw new Error('Please install MetaMask wallet');
       }
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(
+        window.ethereum as ethers.providers.ExternalProvider
+      );
       await provider.send('eth_requestAccounts', []);
 
       const sdk = new InpaymentSDK({
         providerUrl: 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
-        projectId: '1',
+        projectId: '13',
         chainId: 97,
-        projectRegistryAddress: '0xAFDB223fA3edac2A081E3F0293Cd101af2761CBA', // Replace with actual contract address
+        projectRegistryAddress: '0xC09dFCB886c68bE9A844B43C892a38957005D6e1',
       });
 
       await sdk.init();
+      console.log(sdk.getProjectInfo(), 'sdk.getProjectInfo()');
       setSdk(sdk);
 
       toast({
@@ -58,7 +68,10 @@ function App() {
   };
 
   useEffect(() => {
-    sdk && getScheduleCount();
+    if (sdk) {
+      getScheduleCount();
+      getTokenPrice();
+    }
   }, [sdk]);
 
   const buyWithETH = async () => {
@@ -112,7 +125,6 @@ function App() {
         tokenAddress,
         {
           amount,
-          account: await signer.getAddress(),
           roundIndex: 0,
         },
         signer
@@ -156,7 +168,7 @@ function App() {
 
     const result = await sdk.getScheduleCount(address);
     const infoList = new Array(result).fill(0).map((_, index) => {
-      return getVestingScheduleInfo({ address, scheduleId: index });
+      return getVestingScheduleInfo({ address, scheduleId: index + 1 });
     });
     const resultList = await Promise.all(infoList);
 
@@ -231,6 +243,30 @@ function App() {
     }
   };
 
+  const getTokenPrice = async () => {
+    if (!sdk) return;
+
+    try {
+      const provider = new ethers.providers.Web3Provider(
+        window.ethereum as ethers.providers.ExternalProvider
+      );
+      const signer = provider.getSigner();
+      const address = await signer.getAddress();
+
+      const result = await sdk.getTokenPrice({
+        buyer: address,
+      });
+      setTokenPrice(`Price: ${result.price} USDT, Discounted: ${result.discountedPrice} USDT`);
+    } catch (error) {
+      toast({
+        title: 'Failed to get token price',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <Container maxW="container.md" py={10}>
       <VStack spacing={8} align="stretch">
@@ -291,6 +327,13 @@ function App() {
                   Release All Tokens
                 </Button>
               </Stack>
+            </Box>
+
+            <Box pt={4}>
+              <Text fontSize="lg" fontWeight="bold" mb={2}>
+                Token Price
+              </Text>
+              <Text mb={4}>Current Token Price: {tokenPrice || 'Loading...'}</Text>
             </Box>
           </Stack>
         )}

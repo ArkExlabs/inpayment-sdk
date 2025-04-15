@@ -467,24 +467,7 @@
     "stateMutability": "view",
     "type": "function"
   },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "startIdx",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "batchSize",
-        "type": "uint256"
-      }
-    ],
-    "name": "releaseAllTokens",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
+
   {
     "inputs": [
       {
@@ -510,6 +493,11 @@
       {
         "internalType": "address",
         "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
         "type": "address"
       }
     ],

@@ -2,6 +2,12 @@
 
 This document records all significant changes to the Inpayment SDK.
 
+## [1.0.4] - 2025-04-13
+
+### Fixed
+
+- 修复了`releaseAllTokens`函数中`signer`参数未正确传递的问题
+
 ## [1.0.3] - 2025-04-12
 
 ### Added

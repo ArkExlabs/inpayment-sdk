@@ -5,6 +5,11 @@ import type { ethers } from 'ethers';
 // Define mock signer type
 interface MockSigner {
   getAddress: () => Promise<string>;
+  connect: () => MockSigner;
+  provider: {
+    getNetwork: () => Promise<{ chainId: number }>;
+  };
+  signMessage?: (message: string) => Promise<string>;
 }
 
 // Mock ethers library
@@ -12,9 +17,42 @@ vi.mock('ethers', async () => {
   return {
     ethers: {
       Contract: vi.fn().mockImplementation(() => ({
-        getProject: vi
-          .fn()
-          .mockResolvedValue(['0xPaymentContractAddress', '0xLockContractAddress']),
+        getProject: vi.fn().mockResolvedValue([
+          '0xProjectOwner', // projectOwner
+          '0xTokenAddress', // tokenAddress
+          '0xPaymentContractAddress', // paymentProcessor
+          '0xLockContractAddress', // vestingManager
+          [
+            // rounds
+            [
+              '1000000000000000000', // tokenAmount
+              '1000000000000000000', // price
+              '1712880000', // startTime
+              '1715500800', // endTime
+              false, // dynamicPriceEnabled
+              '0', // priceIncreaseThreshold
+              '0', // priceIncreaseRate
+            ],
+          ],
+          '1000000000000000000', // maxTokensToBuy
+          true, // isActive
+          '1712880000', // createdAt
+          [
+            // vestingConfig
+            true, // enabled
+            1, // vestingType
+            '30', // cliff
+            '90', // duration
+            '2', // period
+            '25', // periodReleasePercentage
+          ],
+          [
+            // referralConfig
+            true, // enabled
+            '10', // referrerRewardRate
+            '5', // refereeDiscountRate
+          ],
+        ]),
         buyTokensWithETH: vi.fn().mockResolvedValue({
           wait: vi.fn().mockResolvedValue({
             transactionHash: '0xTransactionHash',
@@ -47,11 +85,32 @@ vi.mock('ethers', async () => {
           '90', // 90 days duration
           '1', // vesting type
           '2', // period
-          { toNumber: vi.fn().mockReturnValue(25) }, // 25% per period
+          '25', // 25% per period
           false, // revoked
         ]),
         approve: vi.fn().mockResolvedValue({
           wait: vi.fn().mockResolvedValue({}),
+        }),
+        getTokenPrice: vi.fn().mockResolvedValue([
+          '1000000000000000000', // price
+          '900000000000000000', // discountedPrice
+        ]),
+        transferToken: vi.fn().mockImplementation(() => ({
+          wait: vi.fn().mockResolvedValue({
+            transactionHash: '0xTransactionHash',
+          }),
+        })),
+        allowance: vi.fn().mockResolvedValue({
+          lt: vi.fn().mockReturnValue(false),
+          toString: vi.fn().mockReturnValue('1000000000000000000'),
+        }),
+        connect: vi.fn().mockReturnThis(),
+        signer: {
+          getAddress: vi.fn().mockResolvedValue('0xUserAddress'),
+        },
+        balanceOf: vi.fn().mockResolvedValue({
+          toString: vi.fn().mockReturnValue('1000000000000000000'),
+          lt: vi.fn().mockReturnValue(false),
         }),
       })),
       providers: {
@@ -85,14 +144,48 @@ describe('InpaymentSDK', () => {
 
     mockSigner = {
       getAddress: vi.fn().mockResolvedValue('0xUserAddress'),
+      connect: vi.fn().mockReturnThis(),
+      provider: {
+        getNetwork: vi.fn().mockResolvedValue({ chainId: 1 }),
+      },
+      signMessage: vi.fn().mockResolvedValue('0xSignature'),
     };
   });
 
   it('should initialize SDK successfully', async () => {
     const projectInfo = await sdk.init();
     expect(projectInfo).toEqual({
-      paymentContractAddress: '0x647b133d614218E3CE42eF8665A83a4E22644723',
-      lockContractAddress: '0xE843114e6bB236648EBEEE1D67C148D3cDb5e7b2',
+      projectOwner: '0xProjectOwner',
+      tokenAddress: '0xTokenAddress',
+      paymentProcessor: '0xPaymentContractAddress',
+      vestingManager: '0xLockContractAddress',
+      rounds: [
+        {
+          tokenAmount: '1.0',
+          price: '1.0',
+          startTime: '1712880000',
+          endTime: '1715500800',
+          dynamicPriceEnabled: false,
+          priceIncreaseThreshold: '0',
+          priceIncreaseRate: '0',
+        },
+      ],
+      maxTokensToBuy: '1.0',
+      isActive: true,
+      createdAt: '1712880000',
+      vestingConfig: {
+        enabled: true,
+        vestingType: 1,
+        cliff: '30',
+        duration: '90',
+        period: '2',
+        periodReleasePercentage: '25',
+      },
+      referralConfig: {
+        enabled: true,
+        referrerRewardRate: '10',
+        refereeDiscountRate: '5',
+      },
     });
   });
 
@@ -100,8 +193,37 @@ describe('InpaymentSDK', () => {
     await sdk.init();
     const projectInfo = sdk.getProjectInfo();
     expect(projectInfo).toEqual({
-      paymentContractAddress: '0x647b133d614218E3CE42eF8665A83a4E22644723',
-      lockContractAddress: '0xE843114e6bB236648EBEEE1D67C148D3cDb5e7b2',
+      projectOwner: '0xProjectOwner',
+      tokenAddress: '0xTokenAddress',
+      paymentProcessor: '0xPaymentContractAddress',
+      vestingManager: '0xLockContractAddress',
+      rounds: [
+        {
+          tokenAmount: '1.0',
+          price: '1.0',
+          startTime: '1712880000',
+          endTime: '1715500800',
+          dynamicPriceEnabled: false,
+          priceIncreaseThreshold: '0',
+          priceIncreaseRate: '0',
+        },
+      ],
+      maxTokensToBuy: '1.0',
+      isActive: true,
+      createdAt: '1712880000',
+      vestingConfig: {
+        enabled: true,
+        vestingType: 1,
+        cliff: '30',
+        duration: '90',
+        period: '2',
+        periodReleasePercentage: '25',
+      },
+      referralConfig: {
+        enabled: true,
+        referrerRewardRate: '10',
+        refereeDiscountRate: '5',
+      },
     });
   });
 
@@ -110,7 +232,6 @@ describe('InpaymentSDK', () => {
     const result = await sdk.buyTokensWithETH(
       {
         amount: '1.0',
-        account: '0xUserAddress',
         roundIndex: 0,
       },
       mockSigner as unknown as ethers.Signer
@@ -127,7 +248,6 @@ describe('InpaymentSDK', () => {
       '0xTokenAddress',
       {
         amount: '100',
-        account: '0xUserAddress',
         roundIndex: 0,
       },
       mockSigner as unknown as ethers.Signer
@@ -168,16 +288,16 @@ describe('InpaymentSDK', () => {
     });
     expect(result).toEqual({
       beneficiary: '0xBeneficiary',
-      amount: '1.0',
-      released: '1.0',
-      startTime: '2024-04-12 08:00:00',
-      cliff: 30,
-      duration: 90,
-      vestingType: '1',
-      period: 2,
+      amount: '1000000000000000000',
+      released: '500000000000000000',
+      startTime: '1712880000',
+      cliff: '30',
+      duration: '90',
+      vestingType: 1,
+      period: '2',
       periodReleasePercentage: 25,
       revoked: false,
-      endTime: '2024-08-10 08:00:00',
+      endTime: '1712880120',
       periodList: expect.any(Array),
     });
   });
@@ -188,13 +308,24 @@ describe('InpaymentSDK', () => {
     const result = await sdk.getPeriodList(startTime, endTime);
 
     // 验证第一个和最后一个时间点
-    expect(result[0]).toBe(1713052800); // 2024-04-14 00:00:00
-    expect(result[result.length - 1]).toBe(1715500800); // 2024-05-12 00:00:00
+    expect(Number(result[0])).toBe(1713052800); // 2024-04-14 00:00:00
+    expect(Number(result[result.length - 1])).toBe(1715500800); // 2024-05-12 00:00:00
 
     // 验证时间间隔是2天
     for (let i = 1; i < result.length; i++) {
-      const diff = result[i] - result[i - 1];
+      const diff = Number(result[i]) - Number(result[i - 1]);
       expect(diff).toBeLessThanOrEqual(2 * 24 * 60 * 60);
     }
+  });
+
+  it('should get token price successfully', async () => {
+    await sdk.init();
+    const result = await sdk.getTokenPrice({
+      buyer: '0xUserAddress',
+    });
+    expect(result).toEqual({
+      price: '1.0',
+      discountedPrice: '1.0',
+    });
   });
 });
