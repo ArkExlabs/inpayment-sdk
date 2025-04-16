@@ -359,7 +359,10 @@ export class InpaymentSDK {
 
       const vestingContract = await this.getVestingManager(params.signer);
 
-      const tx = await vestingContract.releaseTokens(params.startIdx || 1, params.batchSize || 100);
+      const tx = await vestingContract.batchReleaseTokens(
+        params.startIdx || 1,
+        params.batchSize || 100
+      );
       const receipt = await tx.wait();
 
       return {

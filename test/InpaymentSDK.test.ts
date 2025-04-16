@@ -68,7 +68,7 @@ vi.mock('ethers', async () => {
             transactionHash: '0xTransactionHash',
           }),
         }),
-        releaseAllTokens: vi.fn().mockResolvedValue({
+        batchReleaseTokens: vi.fn().mockResolvedValue({
           wait: vi.fn().mockResolvedValue({
             transactionHash: '0xTransactionHash',
           }),
