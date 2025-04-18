@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { isAddress } from 'ethers';
 
 /**
  * 格式化错误信息
@@ -14,7 +15,7 @@ export const formatError = (error: unknown): string => {
  */
 export const isValidAddress = (address: string): boolean => {
   try {
-    return ethers.utils.isAddress(address);
+    return isAddress(address);
   } catch {
     return false;
   }
@@ -25,7 +26,7 @@ export const isValidAddress = (address: string): boolean => {
  */
 export const toWei = (value: string | number): string => {
   try {
-    return ethers.utils.parseEther(value.toString()).toString();
+    return ethers.parseEther(value.toString()).toString();
   } catch (error) {
     throw new Error(`转换Wei值失败: ${formatError(error)}`);
   }
@@ -36,7 +37,7 @@ export const toWei = (value: string | number): string => {
  */
 export const fromWei = (value: string | number): string => {
   try {
-    return ethers.utils.formatEther(value.toString());
+    return ethers.formatEther(value.toString());
   } catch (error) {
     throw new Error(`从Wei转换失败: ${formatError(error)}`);
   }

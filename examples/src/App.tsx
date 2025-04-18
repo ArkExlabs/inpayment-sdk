@@ -13,12 +13,12 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { InpaymentSDK } from '../../src/index';
-import { ethers } from 'ethers';
+import { BrowserProvider } from 'ethers';
 
 // Add type declaration for window.ethereum
 declare global {
   interface Window {
-    ethereum?: ethers.providers.ExternalProvider;
+    ethereum?: any;
   }
 }
 
@@ -36,9 +36,7 @@ function App() {
         throw new Error('Please install MetaMask wallet');
       }
 
-      const provider = new ethers.providers.Web3Provider(
-        window.ethereum as ethers.providers.ExternalProvider
-      );
+      const provider = new BrowserProvider(window.ethereum);
       await provider.send('eth_requestAccounts', []);
 
       const sdk = new InpaymentSDK({
@@ -79,13 +77,12 @@ function App() {
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
       const result = await sdk.buyTokensWithETH(
         {
           amount,
-          account: await signer.getAddress(),
           roundIndex: 0,
         },
         signer
@@ -118,8 +115,8 @@ function App() {
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
       const result = await sdk.buyTokensWithToken(
         tokenAddress,
@@ -162,8 +159,8 @@ function App() {
   const getScheduleCount = async () => {
     if (!sdk) return;
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
     const address = await signer.getAddress();
 
     const result = await sdk.getScheduleCount(address);
@@ -180,8 +177,8 @@ function App() {
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
       const result = await sdk.releaseTokens(signer);
 
@@ -212,8 +209,8 @@ function App() {
 
     try {
       setLoading(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
       const result = await sdk.releaseAllTokens({
         signer,
@@ -247,23 +244,17 @@ function App() {
     if (!sdk) return;
 
     try {
-      const provider = new ethers.providers.Web3Provider(
-        window.ethereum as ethers.providers.ExternalProvider
-      );
-      const signer = provider.getSigner();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const address = await signer.getAddress();
 
       const result = await sdk.getTokenPrice({
         buyer: address,
       });
-      setTokenPrice(`Price: ${result.price} USDT, Discounted: ${result.discountedPrice} USDT`);
+
+      setTokenPrice(result.discountedPrice);
     } catch (error) {
-      toast({
-        title: 'Failed to get token price',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        status: 'error',
-        duration: 3000,
-      });
+      console.error('Failed to get token price:', error);
     }
   };
 

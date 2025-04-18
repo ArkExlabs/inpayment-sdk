@@ -1,4 +1,12 @@
-import { ethers } from 'ethers';
+import {
+  JsonRpcProvider,
+  Contract,
+  Signer,
+  formatEther,
+  parseEther,
+  ZeroAddress,
+  MaxUint256,
+} from 'ethers';
 import {
   erc20ABI,
   paymentContractABI,
@@ -12,13 +20,13 @@ import {
   TransactionResult,
   VestingSchedule,
 } from './interfaces/types';
-import { formatError, isValidAddress, toWei } from './utils';
+import { formatError, isValidAddress } from './utils';
 
 /**
  * Inpayment SDK 主类
  */
 export class InpaymentSDK {
-  private provider: ethers.providers.JsonRpcProvider;
+  private provider: JsonRpcProvider;
   private projectRegistryAddress: string;
   private projectId: string;
   private projectInfo: ProjectInfo | null = null;
@@ -37,14 +45,13 @@ export class InpaymentSDK {
       name: 'custom',
     };
 
-    this.provider = new ethers.providers.JsonRpcProvider(
+    this.provider = new JsonRpcProvider(
       providerUrl,
-      options.chainId ? providerOptions : undefined
+      options.chainId ? providerOptions : undefined,
+      {
+        staticNetwork: !!options.chainId,
+      }
     );
-
-    if (options.chainId) {
-      this.provider.network.chainId = options.chainId;
-    }
   }
 
   /**
@@ -52,7 +59,7 @@ export class InpaymentSDK {
    */
   public async init(): Promise<ProjectInfo> {
     try {
-      const projectRegistry = new ethers.Contract(
+      const projectRegistry = new Contract(
         this.projectRegistryAddress,
         projectRegistryABI,
         this.provider
@@ -72,15 +79,15 @@ export class InpaymentSDK {
         paymentProcessor: res[2], // 支付处理器合约地址
         vestingManager: res[3], // 锁仓管理器合约地址
         rounds: res[4].map((round: any[]) => ({
-          tokenAmount: ethers.utils.formatEther(round[0].toString()), // 本轮代币总量
-          price: ethers.utils.formatEther(round[1].toString()), // 本轮代币价格
+          tokenAmount: formatEther(round[0]), // 本轮代币总量
+          price: formatEther(round[1]), // 本轮代币价格
           startTime: round[2].toString(), // 本轮开始时间
           endTime: round[3].toString(), // 本轮结束时间
           dynamicPriceEnabled: round[4], // 是否启用动态价格
           priceIncreaseThreshold: round[5].toString(), // 价格增长阈值
           priceIncreaseRate: round[6].toString(), // 价格增长率
         })),
-        maxTokensToBuy: ethers.utils.formatEther(res[5].toString()), // 最大可购买代币数量
+        maxTokensToBuy: formatEther(res[5]), // 最大可购买代币数量
         isActive: res[6], // 项目是否激活
         createdAt: res[7].toString(), // 项目创建时间
         vestingConfig: {
@@ -114,11 +121,11 @@ export class InpaymentSDK {
     return this.projectInfo;
   }
 
-  private async getPaymentProcessor(signer?: ethers.Signer) {
+  private async getPaymentProcessor(signer?: Signer) {
     if (!this.projectInfo) {
       await this.init();
     }
-    return new ethers.Contract(
+    return new Contract(
       this.projectInfo!.paymentProcessor,
       paymentContractABI,
       signer || this.provider
@@ -130,7 +137,7 @@ export class InpaymentSDK {
    */
   public async buyTokensWithETH(
     options: BuyTokensOptions,
-    signer: ethers.Signer
+    signer: Signer
   ): Promise<TransactionResult> {
     try {
       const paymentContract = await this.getPaymentProcessor(signer);
@@ -138,9 +145,9 @@ export class InpaymentSDK {
       const tx = await paymentContract.buyTokensWithETH(
         this.projectId,
         options.roundIndex,
-        options.referrer || ethers.constants.AddressZero,
+        options.referrer || ZeroAddress,
         {
-          value: toWei(options.amount),
+          value: parseEther(options.amount.toString()),
         }
       );
 
@@ -148,7 +155,7 @@ export class InpaymentSDK {
 
       return {
         success: true,
-        transactionHash: receipt.transactionHash,
+        transactionHash: receipt?.hash || '',
       };
     } catch (error) {
       return {
@@ -164,21 +171,21 @@ export class InpaymentSDK {
   public async buyTokensWithToken(
     tokenAddress: string,
     options: BuyTokensOptions,
-    signer: ethers.Signer
+    signer: Signer
   ): Promise<TransactionResult> {
     try {
       if (!isValidAddress(tokenAddress)) {
         throw new Error('Invalid token address');
       }
 
-      const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, signer);
+      const tokenContract = new Contract(tokenAddress, erc20ABI, signer);
       const paymentContract = await this.getPaymentProcessor(signer);
-      const amountWei = toWei(options.amount);
+      const amountWei = parseEther(options.amount.toString());
 
       // 检查用户余额是否足够
       const address = await signer.getAddress();
       const balance = await tokenContract.balanceOf(address);
-      if (balance.lt(amountWei)) {
+      if (balance < amountWei) {
         throw new Error('Insufficient token balance');
       }
 
@@ -186,10 +193,10 @@ export class InpaymentSDK {
       const allowance = await tokenContract.allowance(address, this.projectInfo!.paymentProcessor);
 
       // 如果授权额度不足，进行授权
-      if (allowance.lt(amountWei)) {
+      if (allowance < amountWei) {
         const approveTx = await tokenContract.approve(
           this.projectInfo!.paymentProcessor,
-          ethers.constants.MaxUint256
+          MaxUint256
         );
         await approveTx.wait();
       }
@@ -200,13 +207,13 @@ export class InpaymentSDK {
         options.roundIndex,
         tokenAddress,
         amountWei,
-        options.referrer || ethers.constants.AddressZero
+        options.referrer || ZeroAddress
       );
       const receipt = await tx.wait();
 
       return {
         success: true,
-        transactionHash: receipt.transactionHash,
+        transactionHash: receipt?.hash || '',
       };
     } catch (error) {
       return {
@@ -227,7 +234,7 @@ export class InpaymentSDK {
         await this.init();
       }
 
-      const vestingContract = new ethers.Contract(
+      const vestingContract = new Contract(
         this.projectInfo!.vestingManager,
         vestingManagerABI,
         this.provider
@@ -235,7 +242,7 @@ export class InpaymentSDK {
 
       const scheduleId = await vestingContract.getScheduleCount(address);
 
-      return scheduleId.toNumber();
+      return Number(scheduleId);
     } catch (error) {
       return Promise.reject(error);
     }
@@ -256,7 +263,7 @@ export class InpaymentSDK {
         await this.init();
       }
 
-      const vestingContract = new ethers.Contract(
+      const vestingContract = new Contract(
         this.projectInfo!.vestingManager,
         vestingManagerABI,
         this.provider
@@ -317,7 +324,7 @@ export class InpaymentSDK {
   /**
    * 释放代币
    */
-  public async releaseTokens(signer: ethers.Signer): Promise<TransactionResult> {
+  public async releaseTokens(signer: Signer): Promise<TransactionResult> {
     try {
       if (!this.projectInfo) {
         await this.init();
@@ -334,7 +341,7 @@ export class InpaymentSDK {
 
       return {
         success: true,
-        transactionHash: receipt.transactionHash,
+        transactionHash: receipt?.hash || '',
       };
     } catch (error) {
       return {
@@ -348,7 +355,7 @@ export class InpaymentSDK {
    * 释放所有代币
    */
   public async releaseAllTokens(params: {
-    signer: ethers.Signer;
+    signer: Signer;
     startIdx: number;
     batchSize: number;
   }): Promise<TransactionResult> {
@@ -367,7 +374,7 @@ export class InpaymentSDK {
 
       return {
         success: true,
-        transactionHash: receipt.transactionHash,
+        transactionHash: receipt?.hash || '',
       };
     } catch (error) {
       return {
@@ -395,22 +402,22 @@ export class InpaymentSDK {
         this.projectId,
         0,
         params.buyer,
-        params.referrer || ethers.constants.AddressZero
+        params.referrer || ZeroAddress
       );
 
       return {
-        price: ethers.utils.formatEther(price),
-        discountedPrice: ethers.utils.formatEther(discountedPrice),
+        price: formatEther(price),
+        discountedPrice: formatEther(discountedPrice),
       };
     } catch (error) {
       throw new Error(`Failed to get token price: ${formatError(error)}`);
     }
   }
 
-  private async getVestingManager(signer: ethers.Signer) {
+  private async getVestingManager(signer: Signer) {
     if (!this.projectInfo) {
       await this.init();
     }
-    return new ethers.Contract(this.projectInfo!.vestingManager, vestingManagerABI, signer);
+    return new Contract(this.projectInfo!.vestingManager, vestingManagerABI, signer);
   }
 }
