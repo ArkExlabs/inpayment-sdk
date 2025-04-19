@@ -40,9 +40,7 @@ export class InpaymentSDK {
     this.projectRegistryAddress = options.projectRegistryAddress;
     const providerUrl = options.providerUrl;
 
-    this.provider = new JsonRpcProvider(providerUrl, options.chainId || undefined, {
-      staticNetwork: !!options.chainId,
-    });
+    this.provider = new JsonRpcProvider(providerUrl);
   }
 
   /**

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2024-04-19
+
+### Documentation / 文档
+
+- 更新README.md，添加详细的类型字段说明
+- 添加ethers v6依赖说明
+- 优化代码示例，添加provider和signer的初始化说明
+- 添加版本兼容性提醒
+
+### Changed / 变更
+
+- 优化文档结构和格式
+- 完善类型字段的中文注释
+- 改进代码示例的可读性
+
 ## [1.1.0] - 2024-04-19
 
 ### Changed

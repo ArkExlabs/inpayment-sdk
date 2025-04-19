@@ -5,7 +5,6 @@ export interface InpaymentSDKOptions {
   projectId: string;
   providerUrl: string;
   projectRegistryAddress: string;
-  chainId?: number;
 }
 
 /**
