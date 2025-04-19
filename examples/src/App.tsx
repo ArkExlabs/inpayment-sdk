@@ -13,7 +13,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { InpaymentSDK } from '../../src/index';
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, ZeroAddress } from 'ethers';
 
 // Add type declaration for window.ethereum
 declare global {
@@ -29,6 +29,7 @@ function App() {
   const [tokenPrice, setTokenPrice] = useState('');
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('0');
+  const [bnbPrice, setBnbPrice] = useState<string>('0');
   const toast = useToast();
 
   const connectWallet = async () => {
@@ -44,6 +45,7 @@ function App() {
         providerUrl: 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
         projectId: '13',
         projectRegistryAddress: '0xC09dFCB886c68bE9A844B43C892a38957005D6e1',
+        priceFeedManagerAddress: '0xB84C8e311e2006CB06fC853610543A86442a82D3',
       });
 
       await sdk.init();
@@ -70,6 +72,7 @@ function App() {
       getScheduleCount();
       getTokenPrice();
       getProgress();
+      getBnbPrice();
     }
   }, [sdk]);
 
@@ -275,6 +278,24 @@ function App() {
     }
   };
 
+  const getBnbPrice = async () => {
+    if (!sdk) return;
+
+    try {
+      // BNB的合约地址
+      const BNB_ADDRESS = ZeroAddress;
+      const price = await sdk.getTokenUsdValue(BNB_ADDRESS);
+      setBnbPrice(price.toString());
+    } catch (error) {
+      toast({
+        title: '获取BNB价格失败',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <Container maxW="container.md" py={10}>
       <VStack spacing={6} align="stretch">
@@ -289,9 +310,10 @@ function App() {
         ) : (
           <>
             <Box p={4} borderWidth={1} borderRadius="md">
-              <Text fontSize="lg" mb={2}>
-                项目销售进度: {progress}%
-              </Text>
+              <Stack spacing={2}>
+                <Text fontSize="lg">项目销售进度: {progress}%</Text>
+                <Text fontSize="lg">BNB 价格: ${Number(bnbPrice).toFixed(2)}</Text>
+              </Stack>
             </Box>
 
             <Stack spacing={4}>

@@ -12,6 +12,7 @@ import {
   paymentContractABI,
   vestingManagerABI,
   projectRegistryABI,
+  priceFeedManagerABI,
 } from './contracts/abi';
 import {
   InpaymentSDKOptions,
@@ -29,6 +30,7 @@ export class InpaymentSDK {
   private provider: JsonRpcProvider;
   private projectRegistryAddress: string;
   private projectId: string;
+  private priceFeedManagerAddress: string;
   private projectInfo: ProjectInfo | null = null;
 
   /**
@@ -41,6 +43,7 @@ export class InpaymentSDK {
     const providerUrl = options.providerUrl;
 
     this.provider = new JsonRpcProvider(providerUrl);
+    this.priceFeedManagerAddress = options.priceFeedManagerAddress;
   }
 
   /**
@@ -425,5 +428,14 @@ export class InpaymentSDK {
     } catch (error) {
       return Promise.reject(error);
     }
+  }
+  async getTokenUsdValue(tokenAddress: string) {
+    const priceFeed = new Contract(
+      this.priceFeedManagerAddress,
+      priceFeedManagerABI,
+      this.provider
+    );
+    const price = await priceFeed.getTokenUsdValue(tokenAddress, 1);
+    return price;
   }
 }

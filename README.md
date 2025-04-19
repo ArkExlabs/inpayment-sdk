@@ -264,6 +264,18 @@ const progress = await sdk.getProjectProgress();
 console.log(`当前销售进度: ${progress}%`); // 例如: "当前销售进度: 45.50%"
 ```
 
+### 8. 获取代币USD价格
+
+```typescript
+// 获取BNB的USD价格
+const bnbPrice = await sdk.getTokenUsdValue(ZeroAddress);
+console.log(`BNB价格: $${bnbPrice}`);
+
+// 获取其他代币的USD价格
+const tokenPrice = await sdk.getTokenUsdValue('0x...'); // ERC20代币地址
+console.log(`代币价格: $${tokenPrice}`);
+```
+
 ## 接口说明
 
 ### ProjectInfo
