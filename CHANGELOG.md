@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2024-04-19
+
+### Added / 新增
+
+- 添加`getProjectProgress`方法，用于获取项目销售进度
+
 ## [1.1.1] - 2024-04-19
 
 ### Documentation / 文档

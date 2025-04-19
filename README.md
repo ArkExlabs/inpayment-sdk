@@ -257,6 +257,13 @@ const price = await sdk.getTokenPrice({
 });
 ```
 
+### 7. 获取项目销售进度
+
+```typescript
+const progress = await sdk.getProjectProgress();
+console.log(`当前销售进度: ${progress}%`); // 例如: "当前销售进度: 45.50%"
+```
+
 ## 接口说明
 
 ### ProjectInfo

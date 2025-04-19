@@ -409,4 +409,21 @@ export class InpaymentSDK {
     }
     return new Contract(this.projectInfo!.vestingManager, vestingManagerABI, signer);
   }
+
+  // 获取当前项目进度
+  public async getProjectProgress(): Promise<string> {
+    try {
+      const paymentContract = await this.getPaymentProcessor();
+      // 获取已售代币数量
+      const soldAmount = await paymentContract.roundSales(0);
+      const soldAmountFormatted = formatEther(soldAmount);
+      // 获取总代币数量
+      const totalAmount = this.projectInfo!.rounds[0].tokenAmount;
+      // 计算进度
+      const progress = (Number(soldAmountFormatted) / Number(totalAmount)) * 100;
+      return progress.toFixed(2);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
 }

@@ -28,6 +28,7 @@ function App() {
   const [tokenAddress, setTokenAddress] = useState('');
   const [tokenPrice, setTokenPrice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState('0');
   const toast = useToast();
 
   const connectWallet = async () => {
@@ -42,7 +43,6 @@ function App() {
       const sdk = new InpaymentSDK({
         providerUrl: 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
         projectId: '13',
-        chainId: 97,
         projectRegistryAddress: '0xC09dFCB886c68bE9A844B43C892a38957005D6e1',
       });
 
@@ -69,6 +69,7 @@ function App() {
     if (sdk) {
       getScheduleCount();
       getTokenPrice();
+      getProgress();
     }
   }, [sdk]);
 
@@ -258,75 +259,101 @@ function App() {
     }
   };
 
+  const getProgress = async () => {
+    if (!sdk) return;
+
+    try {
+      const result = await sdk.getProjectProgress();
+      setProgress(result);
+    } catch (error) {
+      toast({
+        title: '获取进度失败',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <Container maxW="container.md" py={10}>
-      <VStack spacing={8} align="stretch">
-        <Heading textAlign="center">Inpayment SDK Demo</Heading>
+      <VStack spacing={6} align="stretch">
+        <Heading as="h1" size="xl" textAlign="center">
+          Inpayment SDK Demo
+        </Heading>
 
         {!sdk ? (
-          <Button colorScheme="blue" onClick={connectWallet} isLoading={loading}>
+          <Button onClick={connectWallet} isLoading={loading}>
             Connect Wallet
           </Button>
         ) : (
-          <Stack spacing={4}>
-            <FormControl>
-              <FormLabel>Purchase Amount</FormLabel>
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter purchase amount"
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Token Address (Optional)</FormLabel>
-              <Input
-                value={tokenAddress}
-                onChange={(e) => setTokenAddress(e.target.value)}
-                placeholder="Enter ERC20 token address"
-              />
-            </FormControl>
-
-            <Button
-              colorScheme="blue"
-              onClick={buyWithETH}
-              isLoading={loading}
-              isDisabled={!amount}
-            >
-              Buy with Native Token
-            </Button>
-
-            <Button
-              colorScheme="green"
-              onClick={buyWithToken}
-              isLoading={loading}
-              isDisabled={!amount || !tokenAddress}
-            >
-              Buy with Contract Token
-            </Button>
-
-            <Box pt={4}>
-              <Text fontSize="lg" fontWeight="bold" mb={2}>
-                Token Release
+          <>
+            <Box p={4} borderWidth={1} borderRadius="md">
+              <Text fontSize="lg" mb={2}>
+                项目销售进度: {progress}%
               </Text>
-              <Stack direction="row" spacing={4}>
-                <Button colorScheme="purple" onClick={releaseTokens} isLoading={loading}>
-                  Release Tokens
-                </Button>
-                <Button colorScheme="red" onClick={releaseAllTokens} isLoading={loading}>
-                  Release All Tokens
-                </Button>
-              </Stack>
             </Box>
 
-            <Box pt={4}>
-              <Text fontSize="lg" fontWeight="bold" mb={2}>
-                Token Price
-              </Text>
-              <Text mb={4}>Current Token Price: {tokenPrice || 'Loading...'}</Text>
-            </Box>
-          </Stack>
+            <Stack spacing={4}>
+              <FormControl>
+                <FormLabel>Purchase Amount</FormLabel>
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Enter purchase amount"
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Token Address (Optional)</FormLabel>
+                <Input
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  placeholder="Enter ERC20 token address"
+                />
+              </FormControl>
+
+              <Button
+                colorScheme="blue"
+                onClick={buyWithETH}
+                isLoading={loading}
+                isDisabled={!amount}
+              >
+                Buy with Native Token
+              </Button>
+
+              <Button
+                colorScheme="green"
+                onClick={buyWithToken}
+                isLoading={loading}
+                isDisabled={!amount || !tokenAddress}
+              >
+                Buy with Contract Token
+              </Button>
+
+              <Box pt={4}>
+                <Text fontSize="lg" fontWeight="bold" mb={2}>
+                  Token Release
+                </Text>
+                <Stack direction="row" spacing={4}>
+                  <Button colorScheme="purple" onClick={releaseTokens} isLoading={loading}>
+                    Release Tokens
+                  </Button>
+                  <Button colorScheme="red" onClick={releaseAllTokens} isLoading={loading}>
+                    Release All Tokens
+                  </Button>
+                </Stack>
+              </Box>
+
+              <Box pt={4}>
+                <Text fontSize="lg" fontWeight="bold" mb={2}>
+                  Token Price
+                </Text>
+                <Text mb={4}>Current Token Price: {tokenPrice || 'Loading...'}</Text>
+              </Box>
+            </Stack>
+          </>
         )}
       </VStack>
     </Container>
