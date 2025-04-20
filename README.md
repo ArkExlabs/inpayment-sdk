@@ -231,12 +231,34 @@ const amount = await sdk.getReleaseAmount(signer);
 ### 7. 获取项目解锁时间
 
 ```typescript
-// 获取项目的解锁时间（返回UNIX时间戳）
-const unlockTime = await sdk.getUnlockTime();
+// 获取项目的解锁时间信息
+const unlockTimeInfo = await sdk.getUnlockTime();
 
-// 转换为日期对象
-const unlockDate = new Date(unlockTime * 1000);
+// 返回值类型
+interface UnlockTimeInfo {
+  currentUnlockTime: number; // 当前周期的解锁时间（UNIX时间戳）
+  unlockTimeList: number[]; // 所有解锁时间点列表（UNIX时间戳数组）
+}
 ```
+
+锁仓释放逻辑说明：
+
+1. 自动释放（悬崖期）
+   - 条件：项目开启自动释放（vestingConfig.enabled = true）
+   - 第一次可领取时间 = 预售结束时间 + 悬崖期 + 周期
+2. 手动释放（项目方指定）
+   - 条件：项目方手动设置释放时间
+   - 第一次可领取时间 = 项目方设置的释放时间 + 周期
+3. 默认释放（30天后）
+   - 条件：项目方未开启自动释放且未手动设置释放时间
+   - 第一次可领取时间 = 预售结束时间 + 30天 + 周期
+
+示例：
+假设预售时间是 4.21 - 4.23，悬崖期 1 天，周期 5 天，每个周期释放 20%：
+
+- 自动释放：4.23 + 1天 + 5天 = 4.29
+- 手动释放（4.25开启）：4.25 + 5天 = 4.30
+- 默认释放：4.23 + 30天 + 5天 = 5.28
 
 ### 8. 获取项目进度
 

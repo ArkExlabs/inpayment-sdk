@@ -20,6 +20,7 @@ import {
   BuyTokensOptions,
   TransactionResult,
   VestingSchedule,
+  UnlockTimeInfo,
 } from './interfaces/types';
 import { formatError, isValidAddress } from './utils';
 
@@ -372,22 +373,17 @@ export class InpaymentSDK {
 
   /**
    * 获取当前项目的解锁时间
-   * @returns 解锁时间(秒)
+   * @returns 当前周期解锁时间和解锁时间列表
+   * @description
+   * 1. 如果 releaseStartTime 为 0，表示项目方没有开启释放，使用默认 30 天
+   *    - 第一次可领取时间 = endTime + 30天 + period
+   * 2. 如果 releaseStartTime 不为 0，表示项目方已设置释放时间
+   *    - 第一次可领取时间 = releaseStartTime + period
    */
-  public async getUnlockTime(): Promise<number> {
+  public async getUnlockTime(): Promise<UnlockTimeInfo> {
     try {
       if (!this.projectInfo) {
         await this.init();
-      }
-
-      // 如果没有开启锁仓，使用项目结束时间+锁仓周期+悬崖期
-      if (this.projectInfo?.vestingConfig.enabled) {
-        const endTime = this.projectInfo!.rounds.endTime;
-        const cliff = Number(this.projectInfo!.vestingConfig.cliff);
-        const duration = Number(this.projectInfo!.vestingConfig.duration);
-
-        // 计算解锁时间：项目结束时间 + 锁定期 + 释放期
-        return endTime + cliff + duration;
       }
 
       const vestingContract = new Contract(
@@ -396,11 +392,66 @@ export class InpaymentSDK {
         this.provider
       );
 
-      const releaseStartTime = await vestingContract.releaseStartTime(this.projectId);
+      const period = Number(this.projectInfo!.vestingConfig.period); // 释放周期
+      const cliff = Number(this.projectInfo!.vestingConfig.cliff); // 锁定期
+      const duration = Number(this.projectInfo!.vestingConfig.duration); // 最终释放周期
 
-      return Number(releaseStartTime);
+      // 如果项目方没有开启释放，使用默认 30 天
+      const releaseStartTime = !this.projectInfo!.vestingConfig.enabled
+        ? await vestingContract.releaseStartTime(this.projectId)
+        : this.projectInfo!.rounds.endTime + cliff;
+      const periodReleasePercentage = Number(
+        this.projectInfo!.vestingConfig.periodReleasePercentage
+      );
+
+      // 计算第一次释放时间
+      const firstReleaseTime =
+        Number(releaseStartTime) === 0
+          ? this.projectInfo!.rounds.endTime + 30 * 24 * 60 * 60 + period // 30天转换为秒
+          : Number(releaseStartTime) + period;
+
+      // 生成解锁时间列表
+      const unlockTimeList: number[] = [firstReleaseTime];
+      const totalPeriods = Math.ceil(100 / periodReleasePercentage);
+
+      // 生成后续释放时间点
+      for (let i = 1; i < totalPeriods; i++) {
+        const periodTime = firstReleaseTime + period * i;
+        if (periodTime > firstReleaseTime + duration) {
+          if (!unlockTimeList.includes(firstReleaseTime + duration)) {
+            unlockTimeList.push(firstReleaseTime + duration);
+          }
+          break;
+        }
+        unlockTimeList.push(periodTime);
+      }
+
+      // 获取当前时间
+      const now = Math.floor(Date.now() / 1000);
+
+      // 找到当前所处的周期
+      let currentUnlockTime = unlockTimeList[unlockTimeList.length - 1];
+      for (const time of unlockTimeList) {
+        if (time > now) {
+          currentUnlockTime = time;
+          break;
+        }
+      }
+
+      return {
+        currentUnlockTime,
+        unlockTimeList,
+      };
     } catch (error) {
       throw new Error(`Failed to get unlock time: ${formatError(error)}`);
     }
+  }
+
+  /**
+   * 获取锁仓类型
+   * @returns 锁仓类型 1: 线性释放 2: 阶梯释放 线性释放表示每一秒都会释放，阶梯释放表示每隔一段时间释放一次
+   */
+  public async getVestingType(): Promise<number> {
+    return this.projectInfo!.vestingConfig.vestingType;
   }
 }

@@ -18,6 +18,7 @@ import {
 } from '@chakra-ui/react';
 import { InpaymentSDK } from '../../src/index';
 import { BrowserProvider, ZeroAddress } from 'ethers';
+import dayjs from 'dayjs';
 
 // Add type declaration for window.ethereum
 declare global {
@@ -36,8 +37,8 @@ function App() {
   const [bnbPrice, setBnbPrice] = useState<string>('0');
   const [vestingSchedule, setVestingSchedule] = useState<any>(null);
   const [releaseAmount, setReleaseAmount] = useState<string>('0');
-  const [unlockTime, setUnlockTime] = useState<number>(0);
-  const [timeUntilUnlock, setTimeUntilUnlock] = useState<string>('');
+  const [unlockTime, setUnlockTime] = useState<string>('');
+  const [lockTimeList, setLockTimeList] = useState<string[]>([]);
   const toast = useToast();
 
   const connectWallet = async () => {
@@ -57,7 +58,35 @@ function App() {
       });
 
       await sdk.init();
-      console.log(sdk.getProjectInfo(), 'sdk.getProjectInfo()');
+      const info = await sdk.getProjectInfo();
+      console.log(info, 'info');
+
+      console.log('悬崖期(小时)', info.vestingConfig.cliff / 60 / 60);
+      console.log('释放周期(小时)', info.vestingConfig.period / 60 / 60);
+      console.log('最终释放周期(小时)', info.vestingConfig.duration / 60 / 60);
+      console.log(
+        '项目开始时间',
+        dayjs(info.rounds.startTime * 1000).format('YYYY-MM-DD HH:mm:ss')
+      );
+      console.log('项目结束时间', dayjs(info.rounds.endTime * 1000).format('YYYY-MM-DD HH:mm:ss'));
+      console.log(
+        '第一次释放时间',
+        dayjs(
+          (info.rounds.endTime +
+            Number(info.vestingConfig.cliff) +
+            Number(info.vestingConfig.period)) *
+            1000
+        ).format('YYYY-MM-DD HH:mm:ss')
+      );
+      console.log(
+        '最后一次释放时间',
+        dayjs(
+          (info.rounds.endTime +
+            Number(info.vestingConfig.cliff) +
+            Number(info.vestingConfig.duration)) *
+            1000
+        ).format('YYYY-MM-DD HH:mm:ss')
+      );
       setSdk(sdk);
 
       toast({
@@ -95,7 +124,6 @@ function App() {
       const result = await sdk.buyTokensWithETH(
         {
           amount,
-          roundIndex: 0,
         },
         signer
       );
@@ -134,7 +162,6 @@ function App() {
         tokenAddress,
         {
           amount,
-          roundIndex: 0,
         },
         signer
       );
@@ -161,12 +188,6 @@ function App() {
     }
   };
 
-  const getVestingScheduleInfo = async (params: { address: string; scheduleId: number }) => {
-    if (!sdk) return;
-
-    const result = await sdk.getVestingScheduleInfo(params);
-    return result;
-  };
   const releaseTokens = async () => {
     if (!sdk) return;
 
@@ -270,19 +291,27 @@ function App() {
 
       // 获取解锁时间
       const unlockTimeStamp = await sdk.getUnlockTime();
-      setUnlockTime(unlockTimeStamp);
+      const unlockTime = dayjs(unlockTimeStamp.currentUnlockTime * 1000).format(
+        'YYYY-MM-DD HH:mm:ss'
+      );
+      const list = unlockTimeStamp.unlockTimeList.map((item) =>
+        dayjs(item * 1000).format('YYYY-MM-DD HH:mm:ss')
+      );
+      console.log('当前周期释放时间', unlockTime);
+      console.log('解锁时间表', list);
+      setUnlockTime(unlockTime);
+      setLockTimeList(list);
+      // // 计算距离解锁的时间
+      // const now = Math.floor(Date.now() / 1000);
+      // const timeLeft = unlockTimeStamp - now;
 
-      // 计算距离解锁的时间
-      const now = Math.floor(Date.now() / 1000);
-      const timeLeft = unlockTimeStamp - now;
-
-      if (timeLeft > 0) {
-        const days = Math.floor(timeLeft / (24 * 60 * 60));
-        const hours = Math.floor((timeLeft % (24 * 60 * 60)) / (60 * 60));
-        setTimeUntilUnlock(`${days}天 ${hours}小时`);
-      } else {
-        setTimeUntilUnlock('已解锁');
-      }
+      // if (timeLeft > 0) {
+      //   const days = Math.floor(timeLeft / (24 * 60 * 60));
+      //   const hours = Math.floor((timeLeft % (24 * 60 * 60)) / (60 * 60));
+      //   setTimeUntilUnlock(`${days}天 ${hours}小时`);
+      // } else {
+      //   setTimeUntilUnlock('已解锁');
+      // }
     } catch (error) {
       toast({
         title: '获取锁仓信息失败',
@@ -385,12 +414,12 @@ function App() {
                     <Text>{releaseAmount}</Text>
                   </Box>
                   <Box>
-                    <Text fontWeight="bold">解锁时间:</Text>
-                    <Text>{unlockTime ? new Date(unlockTime * 1000).toLocaleString() : '-'}</Text>
+                    <Text fontWeight="bold">下次解锁时间:</Text>
+                    <Text>{unlockTime ? unlockTime : '-'}</Text>
                   </Box>
                   <Box>
-                    <Text fontWeight="bold">距离解锁还有:</Text>
-                    <Text>{timeUntilUnlock || '-'}</Text>
+                    <Text fontWeight="bold">解锁时间表:</Text>
+                    <Text>{lockTimeList.join(', ')}</Text>
                   </Box>
                   <Button
                     colorScheme="blue"

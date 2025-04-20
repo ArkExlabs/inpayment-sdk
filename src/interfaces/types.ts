@@ -13,7 +13,6 @@ export interface InpaymentSDKOptions {
  */
 export interface BuyTokensOptions {
   amount: string | number; // 购买数量
-  roundIndex: number; // 轮次索引
   referrer?: string; // 推荐人地址
 }
 
@@ -112,4 +111,9 @@ export interface ProjectInfo {
   vestingConfig: VestingConfig;
   // 推荐配置
   referralConfig: ReferralConfig;
+}
+
+export interface UnlockTimeInfo {
+  currentUnlockTime: number;
+  unlockTimeList: number[];
 }
