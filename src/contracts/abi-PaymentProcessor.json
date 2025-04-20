@@ -3,16 +3,6 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_projectId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
         "name": "_projectRegistry",
         "type": "address"
       },
@@ -38,7 +28,7 @@
   },
   {
     "inputs": [],
-    "name": "ExceedMaxToBuy",
+    "name": "ExceedsMaxBuyLimit",
     "type": "error"
   },
   {
@@ -64,6 +54,11 @@
   {
     "inputs": [],
     "name": "InvalidPrice",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotInPresalePeriod",
     "type": "error"
   },
   {
@@ -99,11 +94,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "RoundNotActive",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -118,6 +108,37 @@
     "inputs": [],
     "name": "Unauthorized",
     "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "projectId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "tokenAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "DirectlyTransfered",
+    "type": "event"
   },
   {
     "anonymous": false,
@@ -169,13 +190,13 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "referrer",
+        "name": "buyer",
         "type": "address"
       },
       {
         "indexed": true,
         "internalType": "address",
-        "name": "buyer",
+        "name": "referrer",
         "type": "address"
       },
       {
@@ -195,12 +216,6 @@
         "indexed": true,
         "internalType": "uint256",
         "name": "projectId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "roundIndex",
         "type": "uint256"
       },
       {
@@ -267,12 +282,6 @@
       },
       {
         "indexed": true,
-        "internalType": "uint256",
-        "name": "roundIndex",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
         "internalType": "address",
         "name": "buyer",
         "type": "address"
@@ -298,7 +307,13 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "referralReward",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "actualPrice",
         "type": "uint256"
       },
       {
@@ -312,46 +327,10 @@
     "type": "event"
   },
   {
-    "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
         "internalType": "uint256",
         "name": "projectId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "tokenAmount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "TokensTransfered",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "inputProjectId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "roundIndex",
         "type": "uint256"
       },
       {
@@ -369,17 +348,12 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "inputProjectId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "roundIndex",
+        "name": "projectId",
         "type": "uint256"
       },
       {
         "internalType": "address",
-        "name": "paymentToken",
+        "name": "token",
         "type": "address"
       },
       {
@@ -402,12 +376,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "inputProjectId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "roundIndex",
+        "name": "projectId",
         "type": "uint256"
       },
       {
@@ -465,25 +434,31 @@
   },
   {
     "inputs": [],
-    "name": "projectId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "projectRegistry",
     "outputs": [
       {
         "internalType": "contract IProjectRegistry",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "projectId",
+        "type": "uint256"
+      }
+    ],
+    "name": "projectSales",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -530,25 +505,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "roundSales",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "newOwner",
         "type": "address"
@@ -563,7 +519,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "inputProjectId",
+        "name": "projectId",
         "type": "uint256"
       },
       {
@@ -585,40 +541,21 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "userPurchases",
-    "outputs": [
-      {
         "internalType": "uint256",
-        "name": "",
+        "name": "projectId",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
       }
     ],
-    "name": "userRoundPurchases",
+    "name": "userProjectPurchases",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "amount",
         "type": "uint256"
       }
     ],

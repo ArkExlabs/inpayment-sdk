@@ -38,28 +38,10 @@ export enum VestingType {
 export interface VestingSchedule {
   // 受益人地址
   beneficiary: string;
-  // 锁仓的代币总量
+  // 锁仓代币数量
   amount: string;
-  // 已释放的代币数量
+  // 已释放代币数量
   released: string;
-  // 开始时间
-  startTime: string;
-  // 悬崖期
-  cliff: number;
-  // 锁仓期
-  duration: number;
-  // 锁仓类型
-  vestingType: VestingType;
-  // 周期
-  period: number;
-  // 每个周期的释放比例
-  periodReleasePercentage: number;
-  // 是否已完全释放
-  revoked: boolean;
-  // 结束时间
-  endTime: string;
-  // 周期列表
-  periodList: string[];
 }
 
 /**
@@ -67,19 +49,19 @@ export interface VestingSchedule {
  */
 export interface Round {
   // 代币数量
-  tokenAmount: number;
+  tokenAmount: string;
   // 代币价格（USD标准，单位：wei），例如 0.1 USD = 100000000000000000
-  price: number;
+  price: string;
   // 开始时间（UNIX时间戳）
   startTime: number;
   // 结束时间（UNIX时间戳）
   endTime: number;
   // 价格调整启用
   dynamicPriceEnabled: boolean;
-  // 销售比例阈值（基点，10000 = 100%），达到后触发价格上调
-  priceIncreaseThreshold: number;
-  // 价格上调比例（基点，1000 = 10%），例如10%表示价格增加10%
-  priceIncreaseRate: number;
+  // 销售比例阈值（百分比，如"50"表示50%）
+  priceIncreaseThreshold: string;
+  // 价格上调比例（百分比，如"10"表示10%）
+  priceIncreaseRate: string;
 }
 
 /**
@@ -96,17 +78,17 @@ export interface VestingConfig {
   duration: number;
   // 周期（单位：秒）- 用于周期释放
   period: number;
-  // 每个周期的释放比例（基点，10000 = 100%）- 用于周期释放
-  periodReleasePercentage: number;
+  // 每个周期的释放比例（百分比，如"10"表示10%）
+  periodReleasePercentage: string;
 }
 
 export interface ReferralConfig {
   // 是否启用推荐功能
   enabled: boolean;
-  // 推荐人返点比例（基点，如2000表示20%）
-  referrerRewardRate: number;
-  // 被推荐人折扣比例（基点，如1000表示10%）
-  refereeDiscountRate: number;
+  // 推荐人返点比例（百分比，如20表示20%）
+  referrerRewardRate: string;
+  // 被推荐人折扣比例（百分比，如10表示10%）
+  refereeDiscountRate: string;
 }
 export interface ProjectInfo {
   // 项目方钱包地址
@@ -118,7 +100,7 @@ export interface ProjectInfo {
   // 锁仓管理器合约地址
   vestingManager: string;
   // 预售轮次信息
-  rounds: Round[];
+  rounds: Round;
   // 单个用户在每个轮次中可以购买的最大代币数量
   // 作用：1.防止大户垄断预售; 2.控制每个用户的购买上限，确保代币分配更加公平
   maxTokensToBuy: string;

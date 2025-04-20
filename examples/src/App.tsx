@@ -11,6 +11,10 @@ import {
   Text,
   VStack,
   useToast,
+  Divider,
+  Card,
+  CardHeader,
+  CardBody,
 } from '@chakra-ui/react';
 import { InpaymentSDK } from '../../src/index';
 import { BrowserProvider, ZeroAddress } from 'ethers';
@@ -30,6 +34,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('0');
   const [bnbPrice, setBnbPrice] = useState<string>('0');
+  const [vestingSchedule, setVestingSchedule] = useState<any>(null);
+  const [releaseAmount, setReleaseAmount] = useState<string>('0');
+  const [unlockTime, setUnlockTime] = useState<number>(0);
+  const [timeUntilUnlock, setTimeUntilUnlock] = useState<string>('');
   const toast = useToast();
 
   const connectWallet = async () => {
@@ -43,8 +51,8 @@ function App() {
 
       const sdk = new InpaymentSDK({
         providerUrl: 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
-        projectId: '13',
-        projectRegistryAddress: '0xC09dFCB886c68bE9A844B43C892a38957005D6e1',
+        projectId: '4',
+        projectRegistryAddress: '0x9b0BAd6f3A21d6EF248b2A2B2B21E60B18dC68Db',
         priceFeedManagerAddress: '0xB84C8e311e2006CB06fC853610543A86442a82D3',
       });
 
@@ -69,10 +77,10 @@ function App() {
 
   useEffect(() => {
     if (sdk) {
-      getScheduleCount();
       getTokenPrice();
       getProgress();
       getBnbPrice();
+      fetchVestingInfo();
     }
   }, [sdk]);
 
@@ -159,23 +167,6 @@ function App() {
     const result = await sdk.getVestingScheduleInfo(params);
     return result;
   };
-
-  const getScheduleCount = async () => {
-    if (!sdk) return;
-
-    const provider = new BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const address = await signer.getAddress();
-
-    const result = await sdk.getScheduleCount(address);
-    const infoList = new Array(result).fill(0).map((_, index) => {
-      return getVestingScheduleInfo({ address, scheduleId: index + 1 });
-    });
-    const resultList = await Promise.all(infoList);
-
-    console.log(resultList, 'resultList');
-  };
-
   const releaseTokens = async () => {
     if (!sdk) return;
 
@@ -185,42 +176,6 @@ function App() {
       const signer = await provider.getSigner();
 
       const result = await sdk.releaseTokens(signer);
-
-      if (result.success) {
-        toast({
-          title: 'Release successful',
-          description: `Transaction hash: ${result.transactionHash}`,
-          status: 'success',
-          duration: 5000,
-        });
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      toast({
-        title: 'Release failed',
-        description: error instanceof Error ? error.message : 'Unknown error',
-        status: 'error',
-        duration: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const releaseAllTokens = async () => {
-    if (!sdk) return;
-
-    try {
-      setLoading(true);
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      const result = await sdk.releaseAllTokens({
-        signer,
-        startIdx: 1,
-        batchSize: 100,
-      });
 
       if (result.success) {
         toast({
@@ -296,6 +251,48 @@ function App() {
     }
   };
 
+  // 获取锁仓信息
+  const fetchVestingInfo = async () => {
+    if (!sdk) return;
+
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+
+      // 获取锁仓计划
+      const schedule = await sdk.getVestingScheduleInfo({ address });
+      setVestingSchedule(schedule);
+
+      // 获取可释放数量
+      const amount = await sdk.getReleaseAmount(signer);
+      setReleaseAmount(amount);
+
+      // 获取解锁时间
+      const unlockTimeStamp = await sdk.getUnlockTime();
+      setUnlockTime(unlockTimeStamp);
+
+      // 计算距离解锁的时间
+      const now = Math.floor(Date.now() / 1000);
+      const timeLeft = unlockTimeStamp - now;
+
+      if (timeLeft > 0) {
+        const days = Math.floor(timeLeft / (24 * 60 * 60));
+        const hours = Math.floor((timeLeft % (24 * 60 * 60)) / (60 * 60));
+        setTimeUntilUnlock(`${days}天 ${hours}小时`);
+      } else {
+        setTimeUntilUnlock('已解锁');
+      }
+    } catch (error) {
+      toast({
+        title: '获取锁仓信息失败',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <Container maxW="container.md" py={10}>
       <VStack spacing={6} align="stretch">
@@ -356,25 +353,56 @@ function App() {
 
               <Box pt={4}>
                 <Text fontSize="lg" fontWeight="bold" mb={2}>
-                  Token Release
-                </Text>
-                <Stack direction="row" spacing={4}>
-                  <Button colorScheme="purple" onClick={releaseTokens} isLoading={loading}>
-                    Release Tokens
-                  </Button>
-                  <Button colorScheme="red" onClick={releaseAllTokens} isLoading={loading}>
-                    Release All Tokens
-                  </Button>
-                </Stack>
-              </Box>
-
-              <Box pt={4}>
-                <Text fontSize="lg" fontWeight="bold" mb={2}>
                   Token Price
                 </Text>
                 <Text mb={4}>Current Token Price: {tokenPrice || 'Loading...'}</Text>
               </Box>
             </Stack>
+
+            <Divider my={6} />
+
+            {/* 锁仓信息卡片 */}
+            <Card>
+              <CardHeader>
+                <Heading size="md">锁仓信息</Heading>
+              </CardHeader>
+              <CardBody>
+                <VStack spacing={4} align="stretch">
+                  {vestingSchedule && (
+                    <>
+                      <Box>
+                        <Text fontWeight="bold">总锁仓数量:</Text>
+                        <Text>{vestingSchedule.amount}</Text>
+                      </Box>
+                      <Box>
+                        <Text fontWeight="bold">已释放数量:</Text>
+                        <Text>{vestingSchedule.released}</Text>
+                      </Box>
+                    </>
+                  )}
+                  <Box>
+                    <Text fontWeight="bold">可释放数量:</Text>
+                    <Text>{releaseAmount}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold">解锁时间:</Text>
+                    <Text>{unlockTime ? new Date(unlockTime * 1000).toLocaleString() : '-'}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="bold">距离解锁还有:</Text>
+                    <Text>{timeUntilUnlock || '-'}</Text>
+                  </Box>
+                  <Button
+                    colorScheme="blue"
+                    onClick={releaseTokens}
+                    isLoading={loading}
+                    loadingText="释放中"
+                  >
+                    释放代币
+                  </Button>
+                </VStack>
+              </CardBody>
+            </Card>
           </>
         )}
       </VStack>

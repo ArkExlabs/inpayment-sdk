@@ -5,6 +5,19 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
+## [1.1.5] - 2024-04-20
+
+### Added / 新增
+
+- 添加`getUnlockTime`方法，用于获取项目的解锁时间
+- 添加`getReleaseAmount`方法，用于获取可释放的代币数量
+- 优化示例项目，添加锁仓信息展示功能
+
+### Changed / 变更
+
+- 优化锁仓相关功能的用户体验
+- 改进示例项目的UI展示
+
 ## [1.1.4] - 2024-04-19
 
 ### Added / 新增

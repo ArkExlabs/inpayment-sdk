@@ -44,6 +44,7 @@ const sdk = new InpaymentSDK({
   projectId: 'your-project-id',
   providerUrl: 'https://your-rpc-url',
   projectRegistryAddress: '0x...', // 项目注册合约地址
+  priceFeedManagerAddress: '0x...', // 价格预言机合约地址
 });
 
 // 初始化SDK
@@ -61,6 +62,7 @@ interface InpaymentSDKOptions {
   projectId: string; // 项目ID
   providerUrl: string; // RPC节点URL
   projectRegistryAddress: string; // 项目注册合约地址
+  priceFeedManagerAddress: string; // 价格预言机合约地址
 }
 ```
 
@@ -74,8 +76,8 @@ interface ProjectInfo {
   tokenAddress: string; // 项目代币地址
   paymentProcessor: string; // 支付处理器合约地址
   vestingManager: string; // 锁仓管理器合约地址
-  rounds: Round[]; // 预售轮次信息
-  maxTokensToBuy: string; // 单个用户在每个轮次中可以购买的最大代币数量
+  rounds: Round; // 预售轮次信息
+  maxTokensToBuy: string; // 单个用户可以购买的最大代币数量
   isActive: boolean; // 是否激活
   createdAt: number; // 项目创建时间
   vestingConfig: VestingConfig; // 锁仓配置
@@ -89,13 +91,13 @@ interface ProjectInfo {
 
 ```typescript
 interface Round {
-  tokenAmount: number; // 代币数量
-  price: number; // 代币价格（USD标准，单位：wei）
+  tokenAmount: string; // 代币数量
+  price: string; // 代币价格（USD标准，单位：wei），例如 0.1 USD = 100000000000000000
   startTime: number; // 开始时间（UNIX时间戳）
   endTime: number; // 结束时间（UNIX时间戳）
   dynamicPriceEnabled: boolean; // 价格调整启用
-  priceIncreaseThreshold: number; // 销售比例阈值（基点，10000 = 100%）
-  priceIncreaseRate: number; // 价格上调比例（基点，1000 = 10%）
+  priceIncreaseThreshold: string; // 销售比例阈值（百分比，如"50"表示50%）
+  priceIncreaseRate: string; // 价格上调比例（百分比，如"10"表示10%）
 }
 ```
 
@@ -110,7 +112,7 @@ interface VestingConfig {
   cliff: number; // 悬崖期（单位：秒）
   duration: number; // 锁仓期（单位：秒）
   period: number; // 周期（单位：秒）- 用于周期释放
-  periodReleasePercentage: number; // 每个周期的释放比例（基点，10000 = 100%）
+  periodReleasePercentage: string; // 每个周期的释放比例（百分比，如"10"表示10%）
 }
 ```
 
@@ -132,8 +134,8 @@ enum VestingType {
 ```typescript
 interface ReferralConfig {
   enabled: boolean; // 是否启用推荐功能
-  referrerRewardRate: number; // 推荐人返点比例（基点，如2000表示20%）
-  refereeDiscountRate: number; // 被推荐人折扣比例（基点，如1000表示10%）
+  referrerRewardRate: string; // 推荐人返点比例（如"20"表示20%）
+  refereeDiscountRate: string; // 被推荐人折扣比例（如"10"表示10%）
 }
 ```
 
@@ -144,7 +146,6 @@ interface ReferralConfig {
 ```typescript
 interface BuyTokensOptions {
   amount: string | number; // 购买数量
-  roundIndex: number; // 轮次索引
   referrer?: string; // 推荐人地址（可选）
 }
 ```
@@ -170,15 +171,6 @@ interface VestingSchedule {
   beneficiary: string; // 受益人地址
   amount: string; // 锁仓的代币总量
   released: string; // 已释放的代币数量
-  startTime: string; // 开始时间
-  cliff: number; // 悬崖期
-  duration: number; // 锁仓期
-  vestingType: VestingType; // 锁仓类型
-  period: number; // 周期
-  periodReleasePercentage: number; // 每个周期的释放比例
-  revoked: boolean; // 是否已完全释放
-  endTime: string; // 结束时间
-  periodList: string[]; // 周期列表
 }
 ```
 
@@ -193,17 +185,9 @@ const projectInfo = sdk.getProjectInfo();
 ### 2. 使用ETH购买代币
 
 ```typescript
-import { Wallet } from 'ethers';
-
-// 初始化 signer
-const signer = new Wallet('your-private-key', provider);
-// 或者使用 MetaMask 的 provider
-// const signer = await provider.getSigner();
-
 const result = await sdk.buyTokensWithETH(
   {
     amount: '1.0', // ETH数量
-    roundIndex: 0, // 轮次索引
     referrer: '0x...', // 可选，推荐人地址
   },
   signer
@@ -217,7 +201,6 @@ const result = await sdk.buyTokensWithToken(
   tokenAddress, // ERC20代币地址
   {
     amount: '100', // 代币数量
-    roundIndex: 0, // 轮次索引
     referrer: '0x...', // 可选，推荐人地址
   },
   signer
@@ -227,84 +210,57 @@ const result = await sdk.buyTokensWithToken(
 ### 4. 获取锁仓计划
 
 ```typescript
-const scheduleCount = await sdk.getScheduleCount(address);
 const schedule = await sdk.getVestingScheduleInfo({
   address: '0x...', // 地址
-  scheduleId: 0, // 锁仓计划ID
 });
 ```
 
 ### 5. 释放代币
 
 ```typescript
-// 释放单个锁仓计划的代币
 const result = await sdk.releaseTokens(signer);
-
-// 批量释放代币
-const result = await sdk.releaseAllTokens({
-  signer,
-  startIdx: 0, // 起始索引
-  batchSize: 10, // 批量大小
-});
 ```
 
-### 6. 获取代币价格
+### 6. 获取可释放代币数量
 
 ```typescript
-const price = await sdk.getTokenPrice({
+// 获取当前可释放的代币数量
+const amount = await sdk.getReleaseAmount(signer);
+```
+
+### 7. 获取项目解锁时间
+
+```typescript
+// 获取项目的解锁时间（返回UNIX时间戳）
+const unlockTime = await sdk.getUnlockTime();
+
+// 转换为日期对象
+const unlockDate = new Date(unlockTime * 1000);
+```
+
+### 8. 获取项目进度
+
+```typescript
+// 获取项目销售进度（返回百分比）
+const progress = await sdk.getProjectProgress();
+```
+
+### 9. 获取代币USD价格
+
+```typescript
+// 获取指定代币的USD价格
+const price = await sdk.getTokenUsdValue(tokenAddress);
+```
+
+### 10. 获取代币价格
+
+```typescript
+// 获取代币价格（包含折扣价格）
+const { price, discountedPrice } = await sdk.getTokenPrice({
   buyer: '0x...', // 购买者地址
   referrer: '0x...', // 可选，推荐人地址
 });
 ```
-
-### 7. 获取项目销售进度
-
-```typescript
-const progress = await sdk.getProjectProgress();
-console.log(`当前销售进度: ${progress}%`); // 例如: "当前销售进度: 45.50%"
-```
-
-### 8. 获取代币USD价格
-
-```typescript
-// 获取BNB的USD价格
-const bnbPrice = await sdk.getTokenUsdValue(ZeroAddress);
-console.log(`BNB价格: $${bnbPrice}`);
-
-// 获取其他代币的USD价格
-const tokenPrice = await sdk.getTokenUsdValue('0x...'); // ERC20代币地址
-console.log(`代币价格: $${tokenPrice}`);
-```
-
-## 接口说明
-
-### ProjectInfo
-
-| 字段                   | 类型   | 说明         |
-| ---------------------- | ------ | ------------ |
-| paymentContractAddress | string | 支付合约地址 |
-| lockContractAddress    | string | 锁仓合约地址 |
-
-### BuyTokensOptions
-
-| 字段       | 类型             | 必填 | 说明       |
-| ---------- | ---------------- | ---- | ---------- |
-| amount     | string \| number | 是   | 购买数量   |
-| account    | string           | 是   | 账户地址   |
-| roundIndex | number           | 是   | 轮次索引   |
-| referrer   | string           | 否   | 推荐人地址 |
-
-### TransactionResult
-
-| 字段            | 类型    | 说明               |
-| --------------- | ------- | ------------------ |
-| success         | boolean | 交易是否成功       |
-| transactionHash | string  | 交易哈希（成功时） |
-| error           | string  | 错误信息（失败时） |
-
-## 错误处理
-
-SDK 会自动处理常见的错误，并返回格式化的错误信息。所有方法都会返回 `TransactionResult` 对象，包含交易状态和相关信息。
 
 ## 注意事项
 

@@ -37,6 +37,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "ConfigurationNotSet",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -363,12 +368,12 @@
   },
   {
     "inputs": [],
-    "name": "factory",
+    "name": "feeRate",
     "outputs": [
       {
-        "internalType": "contract IContractFactory",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -444,9 +449,9 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct IDODataModels.Round[]",
-            "name": "rounds",
-            "type": "tuple[]"
+            "internalType": "struct IDODataModels.Round",
+            "name": "round",
+            "type": "tuple"
           },
           {
             "internalType": "uint256",
@@ -467,7 +472,7 @@
             "components": [
               {
                 "internalType": "bool",
-                "name": "enabled",
+                "name": "isAuto",
                 "type": "bool"
               },
               {
@@ -548,57 +553,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "projectId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getProjectVestingConfig",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "bool",
-            "name": "enabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "enum IDODataModels.VestingType",
-            "name": "vestingType",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "cliff",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "duration",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "period",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "periodReleasePercentage",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct IDODataModels.VestingConfig",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "startId",
         "type": "uint256"
       },
@@ -670,9 +624,9 @@
                 "type": "uint256"
               }
             ],
-            "internalType": "struct IDODataModels.Round[]",
-            "name": "rounds",
-            "type": "tuple[]"
+            "internalType": "struct IDODataModels.Round",
+            "name": "round",
+            "type": "tuple"
           },
           {
             "internalType": "uint256",
@@ -693,7 +647,7 @@
             "components": [
               {
                 "internalType": "bool",
-                "name": "enabled",
+                "name": "isAuto",
                 "type": "bool"
               },
               {
@@ -824,11 +778,6 @@
         "internalType": "address",
         "name": "_treasuryWallet",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_contractFactory",
-        "type": "address"
       }
     ],
     "name": "initialize",
@@ -851,6 +800,19 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paymentProcessor",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -932,7 +894,7 @@
         "components": [
           {
             "internalType": "bool",
-            "name": "enabled",
+            "name": "isAuto",
             "type": "bool"
           },
           {
@@ -1056,12 +1018,12 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "newFactory",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
       }
     ],
-    "name": "setContractFactory",
+    "name": "setFeeRate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1070,11 +1032,37 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "newWallet",
+        "name": "processor",
+        "type": "address"
+      }
+    ],
+    "name": "setPaymentProcessor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
         "type": "address"
       }
     ],
     "name": "setTreasuryWallet",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "manager",
+        "type": "address"
+      }
+    ],
+    "name": "setVestingManager",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1175,91 +1163,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "projectId",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "bool",
-            "name": "enabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint256",
-            "name": "referrerRewardRate",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "refereeDiscountRate",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct IDODataModels.ReferralConfig",
-        "name": "config",
-        "type": "tuple"
-      }
-    ],
-    "name": "updateReferralConfig",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "projectId",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "bool",
-            "name": "enabled",
-            "type": "bool"
-          },
-          {
-            "internalType": "enum IDODataModels.VestingType",
-            "name": "vestingType",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "cliff",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "duration",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "period",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "periodReleasePercentage",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct IDODataModels.VestingConfig",
-        "name": "vconfig",
-        "type": "tuple"
-      }
-    ],
-    "name": "updateVestingConfig",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "newImplementation",
         "type": "address"
@@ -1273,6 +1176,19 @@
     "name": "upgradeToAndCall",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "vestingManager",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

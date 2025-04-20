@@ -70,30 +70,30 @@ export class InpaymentSDK {
         tokenAddress: res[1], // 代币合约地址
         paymentProcessor: res[2], // 支付处理器合约地址
         vestingManager: res[3], // 锁仓管理器合约地址
-        rounds: res[4].map((round: any[]) => ({
-          tokenAmount: formatEther(round[0]), // 本轮代币总量
-          price: formatEther(round[1]), // 本轮代币价格
-          startTime: round[2].toString(), // 本轮开始时间
-          endTime: round[3].toString(), // 本轮结束时间
-          dynamicPriceEnabled: round[4], // 是否启用动态价格
-          priceIncreaseThreshold: round[5].toString(), // 价格增长阈值
-          priceIncreaseRate: round[6].toString(), // 价格增长率
-        })),
+        rounds: {
+          tokenAmount: formatEther(res[4].tokenAmount), // 本轮代币总量
+          price: formatEther(res[4].price), // 本轮代币价格
+          startTime: Number(res[4].startTime), // 本轮开始时间
+          endTime: Number(res[4].endTime), // 本轮结束时间
+          dynamicPriceEnabled: res[4].dynamicPriceEnabled, // 是否启用动态价格
+          priceIncreaseThreshold: (Number(res[4].priceIncreaseThreshold) / 100).toFixed(2), // 价格增长阈值
+          priceIncreaseRate: (Number(res[4].priceIncreaseRate) / 100).toFixed(2), // 价格增长率
+        },
         maxTokensToBuy: formatEther(res[5]), // 最大可购买代币数量
         isActive: res[6], // 项目是否激活
         createdAt: res[7].toString(), // 项目创建时间
         vestingConfig: {
-          enabled: res[8][0], // 是否启用锁仓
-          vestingType: res[8][1], // 锁仓类型
-          cliff: res[8][2].toString(), // 锁定期（秒）
-          duration: res[8][3].toString(), // 释放期（秒）
-          period: res[8][4].toString(), // 释放周期（秒）
-          periodReleasePercentage: res[8][5].toString(), // 每期释放比例
+          enabled: res[8].isAuto, // 是否启用锁仓
+          vestingType: Number(res[8].vestingType), // 锁仓类型
+          cliff: res[8].cliff.toString(), // 锁定期（秒）
+          duration: res[8].duration.toString(), // 释放期（秒）
+          period: res[8].period.toString(), // 释放周期（秒）
+          periodReleasePercentage: (Number(res[8].periodReleasePercentage) / 100).toFixed(2), // 每期释放比例
         },
         referralConfig: {
-          enabled: res[9][0], // 是否启用推荐
-          referrerRewardRate: res[9][1].toString(), // 推荐人奖励比例
-          refereeDiscountRate: res[9][2].toString(), // 被推荐人折扣比例
+          enabled: res[9].enabled, // 是否启用推荐
+          referrerRewardRate: (Number(res[9].referrerRewardRate) / 100).toFixed(2), // 推荐人奖励比例（%）
+          refereeDiscountRate: (Number(res[9].refereeDiscountRate) / 100).toFixed(2), // 被推荐人折扣比例（%）
         },
       };
 
@@ -117,8 +117,11 @@ export class InpaymentSDK {
     if (!this.projectInfo) {
       await this.init();
     }
+    if (!this.projectInfo) {
+      throw new Error('Failed to initialize project info');
+    }
     return new Contract(
-      this.projectInfo!.paymentProcessor,
+      this.projectInfo.paymentProcessor,
       paymentContractABI,
       signer || this.provider
     );
@@ -136,7 +139,6 @@ export class InpaymentSDK {
 
       const tx = await paymentContract.buyTokensWithETH(
         this.projectId,
-        options.roundIndex,
         options.referrer || ZeroAddress,
         {
           value: parseEther(options.amount.toString()),
@@ -196,7 +198,6 @@ export class InpaymentSDK {
       // 购买代币
       const tx = await paymentContract.buyTokensWithToken(
         this.projectId,
-        options.roundIndex,
         tokenAddress,
         amountWei,
         options.referrer || ZeroAddress
@@ -216,40 +217,11 @@ export class InpaymentSDK {
   }
 
   /**
-   * 获取代币锁仓计划数量
-   * @param address 地址
-   * @returns 锁仓计划数量
-   */
-  async getScheduleCount(address: string): Promise<number> {
-    try {
-      if (!this.projectInfo) {
-        await this.init();
-      }
-
-      const vestingContract = new Contract(
-        this.projectInfo!.vestingManager,
-        vestingManagerABI,
-        this.provider
-      );
-
-      const scheduleId = await vestingContract.getScheduleCount(address);
-
-      return Number(scheduleId);
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
-
-  /**
    * 获取代币锁仓计划
    * @param address 地址
-   * @param scheduleId 锁仓计划ID
    * @returns 锁仓计划
    */
-  public async getVestingScheduleInfo(params: {
-    address: string;
-    scheduleId: number;
-  }): Promise<VestingSchedule> {
+  public async getVestingScheduleInfo(params: { address: string }): Promise<VestingSchedule> {
     try {
       if (!this.projectInfo) {
         await this.init();
@@ -261,56 +233,15 @@ export class InpaymentSDK {
         this.provider
       );
 
-      const scheduleInfo = await vestingContract.getVestingSchedule(
-        params.address,
-        params.scheduleId
-      );
-
-      const startTime = Number(scheduleInfo[3]);
-      const cliff = Number(scheduleInfo[4]);
-      const duration = Number(scheduleInfo[5]);
-
+      const scheduleInfo = await vestingContract.getVestingSchedule(this.projectId, params.address);
       return {
         beneficiary: scheduleInfo[0],
-        amount: scheduleInfo[1].toString(),
-        released: scheduleInfo[2].toString(),
-        startTime: scheduleInfo[3].toString(),
-        cliff: scheduleInfo[4].toString(),
-        duration: scheduleInfo[5].toString(),
-        vestingType: Number(scheduleInfo[6]),
-        period: scheduleInfo[7].toString(),
-        periodReleasePercentage: Number(scheduleInfo[8]),
-        revoked: scheduleInfo[9],
-        endTime: (startTime + cliff + duration).toString(),
-        periodList: this.getPeriodList(startTime, startTime + cliff + duration),
+        amount: formatEther(scheduleInfo[1]),
+        released: formatEther(scheduleInfo[2]),
       };
     } catch (error) {
-      return Promise.reject(error);
+      throw new Error(`Failed to get vesting schedule: ${formatError(error)}`);
     }
-  }
-
-  /**
-   * 获取周期列表
-   * @param startTime 开始时间 秒
-   * @param endTime 结束时间 秒
-   * @returns 周期列表
-   */
-  getPeriodList(startTime: number, endTime: number) {
-    const periodList = [];
-    const period = 2 * 24 * 60 * 60; // 2天的秒数
-    let currentTime = startTime + period; // 第一个周期的结束时间
-
-    while (currentTime <= endTime) {
-      periodList.push(currentTime.toString());
-      currentTime += period;
-    }
-
-    // 如果最后一个周期超过endTime，添加endTime
-    if (periodList.length === 0 || Number(periodList[periodList.length - 1]) < endTime) {
-      periodList.push(endTime.toString());
-    }
-
-    return periodList;
   }
 
   /**
@@ -324,44 +255,7 @@ export class InpaymentSDK {
 
       const vestingContract = await this.getVestingManager(signer);
 
-      const address = await signer.getAddress();
-
-      const scheduleId = await this.getScheduleCount(address);
-
-      const tx = await vestingContract.releaseTokens(scheduleId);
-      const receipt = await tx.wait();
-
-      return {
-        success: true,
-        transactionHash: receipt?.hash || '',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: formatError(error),
-      };
-    }
-  }
-
-  /**
-   * 释放所有代币
-   */
-  public async releaseAllTokens(params: {
-    signer: Signer;
-    startIdx: number;
-    batchSize: number;
-  }): Promise<TransactionResult> {
-    try {
-      if (!this.projectInfo) {
-        await this.init();
-      }
-
-      const vestingContract = await this.getVestingManager(params.signer);
-
-      const tx = await vestingContract.batchReleaseTokens(
-        params.startIdx || 1,
-        params.batchSize || 100
-      );
+      const tx = await vestingContract.releaseTokens(this.projectId);
       const receipt = await tx.wait();
 
       return {
@@ -378,7 +272,6 @@ export class InpaymentSDK {
 
   /**
    * 获取代币价格
-   * @param roundIndex 轮次索引
    * @param buyer 购买者地址
    * @param referrer 推荐人地址
    * @returns 代币价格和折扣价格
@@ -392,7 +285,6 @@ export class InpaymentSDK {
 
       const [price, discountedPrice] = await paymentContract.getTokenPrice(
         this.projectId,
-        0,
         params.buyer,
         params.referrer || ZeroAddress
       );
@@ -406,11 +298,19 @@ export class InpaymentSDK {
     }
   }
 
+  /**
+   * 获取锁仓管理器合约
+   * @param signer 签名者
+   * @returns 锁仓管理器合约
+   */
   private async getVestingManager(signer: Signer) {
     if (!this.projectInfo) {
       await this.init();
     }
-    return new Contract(this.projectInfo!.vestingManager, vestingManagerABI, signer);
+    if (!this.projectInfo) {
+      throw new Error('Failed to initialize project info');
+    }
+    return new Contract(this.projectInfo.vestingManager, vestingManagerABI, signer);
   }
 
   // 获取当前项目进度
@@ -418,10 +318,10 @@ export class InpaymentSDK {
     try {
       const paymentContract = await this.getPaymentProcessor();
       // 获取已售代币数量
-      const soldAmount = await paymentContract.roundSales(0);
+      const soldAmount = await paymentContract.projectSales(this.projectId);
       const soldAmountFormatted = formatEther(soldAmount);
       // 获取总代币数量
-      const totalAmount = this.projectInfo!.rounds[0].tokenAmount;
+      const totalAmount = this.projectInfo!.rounds.tokenAmount;
       // 计算进度
       const progress = (Number(soldAmountFormatted) / Number(totalAmount)) * 100;
       return progress.toFixed(2);
@@ -429,6 +329,12 @@ export class InpaymentSDK {
       return Promise.reject(error);
     }
   }
+
+  /**
+   * 获取代币价格
+   * @param tokenAddress 代币地址
+   * @returns 代币价格
+   */
   async getTokenUsdValue(tokenAddress: string) {
     const priceFeed = new Contract(
       this.priceFeedManagerAddress,
@@ -437,5 +343,64 @@ export class InpaymentSDK {
     );
     const price = await priceFeed.getTokenUsdValue(tokenAddress, 1);
     return price;
+  }
+
+  /**
+   * 获取可释放代币数量
+   * @param signer 签名者
+   * @returns 可释放代币数量
+   */
+  public async getReleaseAmount(signer: Signer): Promise<string> {
+    try {
+      if (!this.projectInfo) {
+        await this.init();
+      }
+
+      const vestingContract = new Contract(
+        this.projectInfo!.vestingManager,
+        vestingManagerABI,
+        this.provider
+      );
+
+      const address = await signer.getAddress();
+      const releaseAmount = await vestingContract.getReleasableAmount(this.projectId, address);
+      return formatEther(releaseAmount);
+    } catch (error) {
+      throw new Error(`Failed to get releasable amount: ${formatError(error)}`);
+    }
+  }
+
+  /**
+   * 获取当前项目的解锁时间
+   * @returns 解锁时间(秒)
+   */
+  public async getUnlockTime(): Promise<number> {
+    try {
+      if (!this.projectInfo) {
+        await this.init();
+      }
+
+      // 如果没有开启锁仓，使用项目结束时间+锁仓周期+悬崖期
+      if (this.projectInfo?.vestingConfig.enabled) {
+        const endTime = this.projectInfo!.rounds.endTime;
+        const cliff = Number(this.projectInfo!.vestingConfig.cliff);
+        const duration = Number(this.projectInfo!.vestingConfig.duration);
+
+        // 计算解锁时间：项目结束时间 + 锁定期 + 释放期
+        return endTime + cliff + duration;
+      }
+
+      const vestingContract = new Contract(
+        this.projectInfo!.vestingManager,
+        vestingManagerABI,
+        this.provider
+      );
+
+      const releaseStartTime = await vestingContract.releaseStartTime(this.projectId);
+
+      return Number(releaseStartTime);
+    } catch (error) {
+      throw new Error(`Failed to get unlock time: ${formatError(error)}`);
+    }
   }
 }

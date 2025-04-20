@@ -3,27 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_projectId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
         "name": "_projectRegistry",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_paymentProcessor",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_tokenAddress",
         "type": "address"
       }
     ],
@@ -32,12 +12,17 @@
   },
   {
     "inputs": [],
-    "name": "ClaimNotAvailable",
+    "name": "InvalidParameters",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "InvalidParameters",
+    "name": "NotAvailableTokens",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotStartRelease",
     "type": "error"
   },
   {
@@ -86,11 +71,6 @@
   {
     "inputs": [],
     "name": "Unauthorized",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "VestingDisabled",
     "type": "error"
   },
   {
@@ -174,12 +154,6 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "scheduleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
       },
@@ -211,19 +185,13 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "scheduleId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "startTime",
+        "name": "timestamp",
         "type": "uint256"
       }
     ],
@@ -234,22 +202,9 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "startIdx",
+        "name": "projectId",
         "type": "uint256"
       },
-      {
-        "internalType": "uint256",
-        "name": "batchSize",
-        "type": "uint256"
-      }
-    ],
-    "name": "batchReleaseTokens",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
       {
         "internalType": "address",
         "name": "beneficiary",
@@ -259,35 +214,24 @@
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenAddr",
-        "type": "address"
       }
     ],
     "name": "createVestingSchedule",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "scheduleId",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "projectId",
+        "type": "uint256"
+      },
+      {
         "internalType": "address",
         "name": "beneficiary",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "scheduleId",
-        "type": "uint256"
       }
     ],
     "name": "getReleasableAmount",
@@ -304,70 +248,14 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "beneficiary",
-        "type": "address"
-      }
-    ],
-    "name": "getScheduleCount",
-    "outputs": [
-      {
         "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getTotalLockedTokens",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "beneficiary",
-        "type": "address"
-      }
-    ],
-    "name": "getVestedAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "totalVested",
+        "name": "projectId",
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "totalReleased",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "beneficiary",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "scheduleId",
-        "type": "uint256"
       }
     ],
     "name": "getVestingSchedule",
@@ -388,41 +276,6 @@
             "internalType": "uint256",
             "name": "released",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "startTime",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "cliff",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "duration",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum IDODataModels.VestingType",
-            "name": "vestingType",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint256",
-            "name": "period",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "periodReleasePercentage",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "revoked",
-            "type": "bool"
           }
         ],
         "internalType": "struct IVestingManager.VestingSchedule",
@@ -448,32 +301,6 @@
   },
   {
     "inputs": [],
-    "name": "paymentProcessor",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "projectId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "projectRegistry",
     "outputs": [
       {
@@ -489,7 +316,26 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "scheduleId",
+        "name": "projectId",
+        "type": "uint256"
+      }
+    ],
+    "name": "releaseStartTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "projectId",
         "type": "uint256"
       }
     ],
@@ -524,13 +370,32 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "tokenAddress",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "projectId",
+        "type": "uint256"
+      }
+    ],
+    "name": "startRelease",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "projectId",
+        "type": "uint256"
+      }
+    ],
+    "name": "totalLockedTokens",
     "outputs": [
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -547,6 +412,40 @@
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "projectId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "vestingSchedules",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "released",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]
