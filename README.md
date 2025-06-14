@@ -26,7 +26,13 @@ yarn add inpayment-sdk
 
 ## 初始化
 
-首先需要初始化 SDK 实例：
+### 申请成为项目方
+
+1. 访问[Inpayment官方网站](https://www/inpayment.io)完成申请成为项目方流程
+2. 48小时内审核完成
+3. 审核通过后可创建项目，并复制`projectId`及`projectRegistryAddress`字段初始化SDK实例
+
+### 初始化 SDK 实例：
 
 ```typescript
 import { InpaymentSDK } from 'inpayment-sdk';
@@ -283,6 +289,26 @@ const { price, discountedPrice } = await sdk.getTokenPrice({
   referrer: '0x...', // 可选，推荐人地址
 });
 ```
+
+## 开放 API 访问和用法
+
+在开始使用 开放 API 之前，你需要先在[Inpayment官方网站](https://www/inpayment.io)完成申请成为项目方获取`APIKEY`
+
+### 鉴权
+
+所有对 API 发起访问的请求都需要包括下面信息来进行身份认证。
+
+- x-api-key ：APIKEY
+
+### API 使用
+
+访问[API](https://apifox.com/apidoc/shared/f0fb9ff4-abef-4667-9778-dca8adf37dea)获取项目相关信息
+
+1. [获取实时代币销售价格](https://ai.imbe.me/v1/payment/user/token/price)
+2. [获取用户购买项目代币的历史交易记录（含项目方直接转账）](https://ai.imbe.me/v1/payment/user/token/trades)
+3. [合约交互: 获取用户在指定项目中的可释放代币总数](https://ai.imbe.me/v1/payment/user/releasable)
+4. [获取用户的锁仓历史记录](https://ai.imbe.me/v1/payment/user/schedules)
+5. [获取用户的代币释放历史记录](https://ai.imbe.me/v1/payment/user/releases)
 
 ## 注意事项
 

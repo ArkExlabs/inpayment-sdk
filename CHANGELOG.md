@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
+## [1.1.6] - 2025-06-14
+
+### 文档
+
+- 更新了 README.md，补充了开放API使用
+
 ## [1.1.6] - 2024-04-20
 
 ### 优化
