@@ -28,6 +28,7 @@ export interface TransactionResult {
 export enum VestingType {
   LINEAR = 1, // 线性释放
   STEP = 2, // 阶梯释放
+  None = 0,
 }
 
 /**

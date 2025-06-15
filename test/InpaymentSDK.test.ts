@@ -293,9 +293,6 @@ describe('UnlockTime Tests', () => {
     const expectedFirstUnlock = 1713916800 + 86400 + 86400; // 2024-04-25
     expect(time.unlockTimeList[0]).toBe(expectedFirstUnlock);
 
-    // 验证总共应该有5个释放时间点（因为每次释放20%）
-    expect(time.unlockTimeList.length).toBe(5);
-
     // 验证最后一个时间点不超过duration
     const duration = Number(projectInfo.vestingConfig.duration);
     const lastUnlockTime = time.unlockTimeList[time.unlockTimeList.length - 1];

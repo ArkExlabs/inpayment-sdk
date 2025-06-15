@@ -21,6 +21,7 @@ import {
   TransactionResult,
   VestingSchedule,
   UnlockTimeInfo,
+  VestingType,
 } from './interfaces/types';
 import { formatError, isValidAddress } from './utils';
 
@@ -380,11 +381,27 @@ export class InpaymentSDK {
    * 2. 如果 releaseStartTime 不为 0，表示项目方已设置释放时间
    *    - 第一次可领取时间 = releaseStartTime + period
    */
+
+  /**
+   * 不锁仓，预售结束全部释放，用户可以领取全部
+   * 线性释放， 悬崖期结束后，每秒线性释放，锁仓期结束即全部释放完
+   * 周期释放， 悬崖期结束后，进入周期释放，每周期释放一定比例
+   */
   public async getUnlockTime(): Promise<UnlockTimeInfo> {
     try {
       if (!this.projectInfo) {
         await this.init();
       }
+
+      const vestingConfig = this.projectInfo!.vestingConfig;
+      const vestingType = vestingConfig.vestingType;
+      const enabled = vestingConfig.enabled;
+      const period = Number(vestingConfig.period);
+      const cliff = Number(vestingConfig.cliff);
+      const duration = Number(vestingConfig.duration);
+      const periodReleasePercentage = Number(vestingConfig.periodReleasePercentage);
+      const endTime = this.projectInfo!.rounds.endTime;
+      const now = Math.floor(Date.now() / 1000);
 
       const vestingContract = new Contract(
         this.projectInfo!.vestingManager,
@@ -392,55 +409,75 @@ export class InpaymentSDK {
         this.provider
       );
 
-      const period = Number(this.projectInfo!.vestingConfig.period); // 释放周期
-      const cliff = Number(this.projectInfo!.vestingConfig.cliff); // 锁定期
-      const duration = Number(this.projectInfo!.vestingConfig.duration); // 最终释放周期
-
       // 如果项目方没有开启释放，使用默认 30 天
-      const releaseStartTime = !this.projectInfo!.vestingConfig.enabled
+      const time = !this.projectInfo!.vestingConfig.enabled
         ? await vestingContract.releaseStartTime(this.projectId)
-        : this.projectInfo!.rounds.endTime + cliff;
-      const periodReleasePercentage = Number(
-        this.projectInfo!.vestingConfig.periodReleasePercentage
-      );
+        : endTime + cliff;
 
-      // 计算第一次释放时间
-      const firstReleaseTime =
-        Number(releaseStartTime) === 0
-          ? this.projectInfo!.rounds.endTime + 30 * 24 * 60 * 60 + period // 30天转换为秒
-          : Number(releaseStartTime) + period;
+      const releaseStartTime = Number(time);
 
-      // 生成解锁时间列表
-      const unlockTimeList: number[] = [firstReleaseTime];
-      const totalPeriods = Math.ceil(100 / periodReleasePercentage);
+      let unlockTimeList: number[] = [];
+      let currentUnlockTime = 0;
 
-      // 生成后续释放时间点
-      for (let i = 1; i < totalPeriods; i++) {
-        const periodTime = firstReleaseTime + period * i;
-        if (periodTime > firstReleaseTime + duration) {
-          if (!unlockTimeList.includes(firstReleaseTime + duration)) {
-            unlockTimeList.push(firstReleaseTime + duration);
+      // 不锁仓，预售结束全部释放
+      if (!enabled || vestingType === VestingType.None) {
+        const unlockTime = releaseStartTime;
+        unlockTimeList = [unlockTime];
+        currentUnlockTime = unlockTime;
+        return {
+          currentUnlockTime,
+          unlockTimeList,
+        };
+      }
+
+      const firstReleaseTime = releaseStartTime + period;
+
+      // 线性释放
+      if (vestingType === VestingType.LINEAR) {
+        // 线性释放只需关心 cliffEnd 和 linearEnd
+        // 这里 firstReleaseTime 作为 cliffEnd
+        const linearEnd = firstReleaseTime + duration;
+        unlockTimeList = [firstReleaseTime, linearEnd];
+        currentUnlockTime = unlockTimeList.find((t) => t > now) || linearEnd;
+        return {
+          currentUnlockTime,
+          unlockTimeList,
+        };
+      }
+
+      // 周期释放
+      if (vestingType === VestingType.STEP) {
+        if (period <= 0 || periodReleasePercentage <= 0) {
+          // 参数异常，无法生成解锁时间
+          return {
+            currentUnlockTime: 0,
+            unlockTimeList: [],
+          };
+        }
+        unlockTimeList = [firstReleaseTime];
+        const totalPeriods = Math.ceil(100 / periodReleasePercentage);
+        for (let i = 1; i < totalPeriods; i++) {
+          const periodTime = firstReleaseTime + period * i;
+          if (periodTime > firstReleaseTime + duration) {
+            if (!unlockTimeList.includes(firstReleaseTime + duration)) {
+              unlockTimeList.push(firstReleaseTime + duration);
+            }
+            break;
           }
-          break;
+          unlockTimeList.push(periodTime);
         }
-        unlockTimeList.push(periodTime);
+        currentUnlockTime =
+          unlockTimeList.find((t) => t > now) || unlockTimeList[unlockTimeList.length - 1];
+        return {
+          currentUnlockTime,
+          unlockTimeList,
+        };
       }
 
-      // 获取当前时间
-      const now = Math.floor(Date.now() / 1000);
-
-      // 找到当前所处的周期
-      let currentUnlockTime = unlockTimeList[unlockTimeList.length - 1];
-      for (const time of unlockTimeList) {
-        if (time > now) {
-          currentUnlockTime = time;
-          break;
-        }
-      }
-
+      // 其他异常情况
       return {
-        currentUnlockTime,
-        unlockTimeList,
+        currentUnlockTime: 0,
+        unlockTimeList: [],
       };
     } catch (error) {
       throw new Error(`Failed to get unlock time: ${formatError(error)}`);

@@ -5,7 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/) 语义化版本规范。
 
-## [1.1.6] - 2025-06-14
+## [1.1.8] - 2025-06-14
+
+### 优化
+
+- 优化了代币锁仓释放逻辑的计算方式，修复解锁时间方法错误问题
+
+## [1.1.7] - 2025-06-14
 
 ### 文档
 

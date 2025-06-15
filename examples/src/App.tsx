@@ -51,16 +51,19 @@ function App() {
       await provider.send('eth_requestAccounts', []);
 
       const sdk = new InpaymentSDK({
-        providerUrl: 'https://data-seed-prebsc-1-s1.bnbchain.org:8545',
-        projectId: '4',
-        projectRegistryAddress: '0x9b0BAd6f3A21d6EF248b2A2B2B21E60B18dC68Db',
-        priceFeedManagerAddress: '0xB84C8e311e2006CB06fC853610543A86442a82D3',
+        providerUrl:
+          'https://rpc.ankr.com/eth_sepolia/2df18a539088cd12f0a43331d7ea546f761074f56882ac571f27a295003edf5f',
+        projectId: '15',
+        projectRegistryAddress: '0x7AD469E953a9f087c09CB236eC4D239a9820e8Dd',
+        priceFeedManagerAddress: '0xFd4799DF21F268ce9D7298AC5A36DfA361940aC5',
       });
 
       await sdk.init();
       const info = await sdk.getProjectInfo();
       console.log(info, 'info');
 
+      console.log('是否自动释放', info.vestingConfig.enabled);
+      console.log('释放类型', info.vestingConfig.vestingType);
       console.log('悬崖期(小时)', info.vestingConfig.cliff / 60 / 60);
       console.log('释放周期(小时)', info.vestingConfig.period / 60 / 60);
       console.log('最终释放周期(小时)', info.vestingConfig.duration / 60 / 60);
@@ -338,7 +341,7 @@ function App() {
             <Box p={4} borderWidth={1} borderRadius="md">
               <Stack spacing={2}>
                 <Text fontSize="lg">项目销售进度: {progress}%</Text>
-                <Text fontSize="lg">BNB 价格: ${Number(bnbPrice).toFixed(2)}</Text>
+                <Text fontSize="lg">主代币价格: ${Number(bnbPrice).toFixed(2)}</Text>
               </Stack>
             </Box>
 
